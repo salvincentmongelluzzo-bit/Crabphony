@@ -296,11 +296,23 @@ btnBuyMutation.addEventListener('click', () => { if(score >= getCost('mutationLa
 btnHarvest.addEventListener('click', () => { let sel = harvestSelect.value; let t = crabs.filter(c => c.color === sel); score += t.length * (CRAB_TIERS[sel].value * 10) * globalMultiplier; crabs = crabs.filter(c => c.color !== sel); saveGame(); });
 btnHardReset.addEventListener('click', () => { if(confirm("Erase all data? This cannot be undone.")) { localStorage.removeItem('crabphonySave'); location.reload(); }});
 
+// --- FIXED PRESTIGE LOGIC ---
 btnPrestige.addEventListener('click', () => { 
     if(score >= 100000) { 
+        // 1. Calculate Prestige Rewards
         goldenBarnacles += Math.floor(score / 100000); 
-        globalMultiplier = 1 + goldenBarnacles * 0.5; 
-        localStorage.removeItem('crabphonySave'); 
+        globalMultiplier = 1 + (goldenBarnacles * 0.5); 
+        
+        // 2. Reset standard run progress
+        score = 0;
+        crabs = [];
+        foods = [];
+        Object.keys(upgrades).forEach(k => upgrades[k].level = 0);
+        
+        // 3. Save the new state to localStorage (DO NOT REMOVE IT)
+        saveGame(); 
+        
+        // 4. Reload to clear memory and restart engine cleanly
         location.reload(); 
     }
 });
