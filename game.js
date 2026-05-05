@@ -10,7 +10,9 @@ const uiScreens = {
 
 const menuBtns = {
     newGame: document.getElementById('btnNewGame'),
-    continue: document.getElementById('btnContinueGame')
+    continue: document.getElementById('btnContinueGame'),
+    howToPlay: document.getElementById('btnHowToPlay'),
+    aboutUs: document.getElementById('btnAboutUs')
 };
 
 const scoreDisplay = document.getElementById('scoreDisplay');
@@ -171,7 +173,6 @@ class Crab {
         
         ctx.drawImage(sprite, -this.size, -this.size, s, s);
 
-        // --- DYNAMIC OVERLAYS (Eyes only) ---
         if (this.isFed) {
             ctx.fillStyle = "#ffcc00";
             ctx.beginPath(); ctx.arc(-6, -14, 4.5, 0, Math.PI * 2); ctx.fill(); 
@@ -220,13 +221,14 @@ function updateUI() {
     btnHarvest.disabled = count === 0; btnBuyCapacity.disabled = score < getCost('tankCapacity');
     btnBuyBlueCrab.disabled = score < getCost('blueCrabsBought') || crabs.length >= (10 + upgrades.tankCapacity.level * 5);
     btnBuyAutoFeeder.disabled = score < getCost('autoFeeder') || (10000 - (upgrades.autoFeeder.level * 1000) <= 1500);
-    btnBuyMutation.disabled = score < getCost('mutationLab'); btnPrestige.disabled = score < 1000;
+    btnBuyMutation.disabled = score < getCost('mutationLab'); 
+    
+    btnPrestige.disabled = score < 100000;
 
     if (crabSprite.complete && crabSprite.naturalWidth !== 0) renderLegend();
 }
 
 function renderLegend() {
-    // 1. Build the HTML elements exactly once
     if (crabKeyContainer.children.length === 0) {
         for (let h in CRAB_TIERS) {
             let item = document.createElement('div'); item.className = 'key-item'; item.id = `legend-${h.replace('#', '')}`; 
@@ -237,31 +239,47 @@ function renderLegend() {
             let rarityText = h === '#ff4d4d' ? 'Base' : (CRAB_TIERS[h].baseMutate * (1 + upgrades.mutationLab.level * 0.1) * 100).toFixed(2) + '%';
             
             item.appendChild(iconCanvas); 
-            // We wrap the dynamic text in a span with the class 'rarity-val' so we can update it later
             item.innerHTML += `<span>${CRAB_TIERS[h].name}</span><br><span class="rarity-val">${rarityText}</span>`; 
             crabKeyContainer.appendChild(item);
         }
     }
 
-    // 2. Update the canvases and the text values every frame
     for (let h in CRAB_TIERS) {
         const item = document.getElementById(`legend-${h.replace('#', '')}`); 
         if (!item) continue;
 
-        // Update the real-time mutation percentage text
         const textSpan = item.querySelector('.rarity-val');
         if (textSpan) {
             textSpan.innerText = h === '#ff4d4d' ? 'Base' : (CRAB_TIERS[h].baseMutate * (1 + upgrades.mutationLab.level * 0.1) * 100).toFixed(2) + '%';
         }
 
-        // Update the visual canvas icon
-        const iconCanvas = item.querySelector('canvas'), iCtx = iconCanvas.getContext('2d');
+        const iconCanvas = item.querySelector('canvas');
+        const iCtx = iconCanvas.getContext('2d');
         let color = h === 'rainbow' ? `hsl(${(Date.now() / 5) % 360}, 100%, 50%)` : h;
         
-        tintCanvas.width = crabSprite.width; tintCanvas.height = crabSprite.height; tCtx.clearRect(0, 0, tintCanvas.width, tintCanvas.height);
-        tCtx.drawImage(crabSprite, 0, 0); tCtx.globalCompositeOperation = 'source-in'; tCtx.fillStyle = color; tCtx.fillRect(0, 0, tintCanvas.width, tintCanvas.height);
+        tintCanvas.width = crabSprite.width; 
+        tintCanvas.height = crabSprite.height; 
+        tCtx.clearRect(0, 0, tintCanvas.width, tintCanvas.height);
+        tCtx.drawImage(crabSprite, 0, 0); 
+        tCtx.globalCompositeOperation = 'source-in'; 
+        tCtx.fillStyle = color; 
+        tCtx.fillRect(0, 0, tintCanvas.width, tintCanvas.height);
         
-        iCtx.clearRect(0, 0, 32, 32); iCtx.drawImage(tintCanvas, 0, 0, 32, 32);
+        iCtx.clearRect(0, 0, 32, 32); 
+        iCtx.drawImage(tintCanvas, 2, 2, 28, 28);
+        
+        iCtx.save();
+        iCtx.translate(16, 16);
+        
+        iCtx.fillStyle = "#ffffff";
+        iCtx.beginPath(); iCtx.arc(-3, -7, 2.5, 0, Math.PI * 2); iCtx.fill(); 
+        iCtx.beginPath(); iCtx.arc(3, -7, 2.5, 0, Math.PI * 2); iCtx.fill();  
+        
+        iCtx.fillStyle = "#000000";
+        iCtx.beginPath(); iCtx.arc(-3, -7, 1.5, 0, Math.PI * 2); iCtx.fill();
+        iCtx.beginPath(); iCtx.arc(3, -7, 1.5, 0, Math.PI * 2); iCtx.fill();
+        
+        iCtx.restore();
     }
 }
 
@@ -269,18 +287,54 @@ function saveGame() {
     localStorage.setItem('crabphonySave', JSON.stringify({ score, goldenBarnacles, globalMultiplier, upgrades, crabs: crabs.map(c => ({x: c.x, y: c.y, color: c.color, isFed: c.isFed})) }));
 }
 
-// --- CONTROLS ---
+// --- CONTROLS & DROPDOWN STYLING ---
 btnBuyCapacity.addEventListener('click', () => { if(score >= getCost('tankCapacity')) { score -= getCost('tankCapacity'); upgrades.tankCapacity.level++; updateUI(); saveGame(); }});
 btnBuyBlueCrab.addEventListener('click', () => { if(score >= getCost('blueCrabsBought') && crabs.length < (10 + upgrades.tankCapacity.level * 5)) { score -= getCost('blueCrabsBought'); crabs.push(new Crab(canvas.width/2, canvas.height/2, '#4da6ff')); updateUI(); saveGame(); }});
 btnBuyAutoFeeder.addEventListener('click', () => { if(score >= getCost('autoFeeder') && (10000 - (upgrades.autoFeeder.level * 1000) > 1500 || upgrades.autoFeeder.level === 0)) { score -= getCost('autoFeeder'); upgrades.autoFeeder.level++; updateFeederTimer(); updateUI(); saveGame(); }});
 btnBuyMutation.addEventListener('click', () => { if(score >= getCost('mutationLab')) { score -= getCost('mutationLab'); upgrades.mutationLab.level++; updateUI(); saveGame(); }});
 btnHarvest.addEventListener('click', () => { let sel = harvestSelect.value; let t = crabs.filter(c => c.color === sel); score += t.length * (CRAB_TIERS[sel].value * 10) * globalMultiplier; crabs = crabs.filter(c => c.color !== sel); saveGame(); });
 btnHardReset.addEventListener('click', () => { if(confirm("Erase all data? This cannot be undone.")) { localStorage.removeItem('crabphonySave'); location.reload(); }});
-btnPrestige.addEventListener('click', () => { if(score >= 1000) { goldenBarnacles += Math.floor(score/1000); globalMultiplier = 1 + goldenBarnacles * 0.5; localStorage.removeItem('crabphonySave'); location.reload(); }});
+
+btnPrestige.addEventListener('click', () => { 
+    if(score >= 100000) { 
+        goldenBarnacles += Math.floor(score / 100000); 
+        globalMultiplier = 1 + goldenBarnacles * 0.5; 
+        localStorage.removeItem('crabphonySave'); 
+        location.reload(); 
+    }
+});
+
 canvas.addEventListener('mousedown', (e) => { const r = canvas.getBoundingClientRect(); foods.push(new Food(e.clientX - r.left, e.clientY - r.top)); });
 
+// Fixed relative paths for live deployment
+menuBtns.howToPlay.addEventListener('click', () => {
+    window.location.href = 'howtoplay.html'; 
+});
+
+menuBtns.aboutUs.addEventListener('click', () => {
+    window.location.href = 'about.html'; 
+});
+
+// Populate Harvester Dropdown with Colors
 harvestSelect.innerHTML = '';
-for (let h in CRAB_TIERS) { let o = document.createElement('option'); o.value = h; o.text = CRAB_TIERS[h].name + ' Crab'; harvestSelect.appendChild(o); }
+for (let h in CRAB_TIERS) { 
+    let o = document.createElement('option'); 
+    o.value = h; 
+    o.text = CRAB_TIERS[h].name + ' Crab'; 
+    
+    let textColor = h === 'rainbow' ? '#ffcc00' : h; 
+    o.style.color = textColor;
+    o.style.fontWeight = 'bold';
+    
+    harvestSelect.appendChild(o); 
+}
+
+harvestSelect.style.color = harvestSelect.value === 'rainbow' ? '#ffcc00' : harvestSelect.value;
+harvestSelect.style.fontWeight = 'bold';
+
+harvestSelect.addEventListener('change', (e) => {
+    harvestSelect.style.color = e.target.value === 'rainbow' ? '#ffcc00' : e.target.value;
+});
 
 // --- BOOT SEQUENCE & INITIALIZATION ---
 let savedData = null;
