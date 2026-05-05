@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crabphony | Deep Sea Evolution</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="loadingScreen">
+        <img src="crab.png" id="loadingCrab" alt="Loading Crab">
+        <div class="loader-bar">
+            <div class="loader-fill"></div>
+        </div>
+    </div>
+
+    <div id="mainMenu" style="display: none;">
+        <img src="crabphony.png" id="menuLogo" alt="Crabphony">
+        <div class="menu-buttons">
+            <button id="btnNewGame">NEW GAME</button>
+            <button id="btnContinueGame">CONTINUE</button>
+        </div>
+    </div>
+
+    <div id="gameLayer" style="display: none;">
+        
+        <div id="shop">
+            <img src="crabphony.png" id="sidebarLogo" alt="Crabphony">
+            
+            <h2>Upgrades & Management</h2>
+            <button id="btnBuyCapacity">Expand Tank (+5 Space) - Cost: <span id="costCapacity">100</span></button>
+            <button id="btnBuyBlueCrab">Import Blue Crab (Cost: <span id="costBlueCrab">50</span>)</button>
+            <button id="btnBuyAutoFeeder">Upgrade Auto-Feeder (Lvl <span id="lvlFeeder">0</span>) - Cost: <span id="costFeeder">200</span></button>
+            <button id="btnBuyMutation" style="border-color: #ff66b3; color: #ff66b3;">Upgrade Genetics (Lvl <span id="lvlMutation">0</span>) - Cost: <span id="costMutation">500</span></button>
+            
+            <div style="margin-top: 20px; border-top: 1px solid #ff4d4d; padding-top: 15px;">
+                <h2 style="color: #ff4d4d; font-size: 16px; margin-top: 0;">Harvester</h2>
+                <select id="harvestSelect"></select>
+                <button id="btnHarvest">Harvest Selected (+<span id="harvestYield">0</span> pts)</button>
+            </div>
+            
+            <div style="margin-top: 30px; border-top: 1px solid #4da6ff; padding-top: 15px;">
+                <h2 style="color: #ffcc00; font-size: 16px;">Evolution</h2>
+                <button id="btnPrestige">CARCINIZE (Requires 1000 Pts)</button>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 1px solid #ff4d4d; padding-top: 15px;">
+                <p style="color: #ff4d4d; font-size: 11px; margin-bottom: 5px;">WARNING: THIS WIPES EVERYTHING</p>
+                <button id="btnHardReset">ERASE ALL DATA</button>
+            </div>
+        </div>
+
+        <div id="ui">
+            <p>Points: <span id="scoreDisplay">0.0</span></p>
+            <p>Population: <span id="popDisplay">2</span> / <span id="maxPopDisplay">10</span></p>
+            <p style="color: #ffcc00; font-size: 14px;">Multiplier: x<span id="multiplierDisplay">1.0</span></p>
+            <p style="color: #ffcc00; font-size: 14px;">Golden Barnacles: <span id="barnacleDisplay">0</span></p>
+        </div>
+
+        <div id="crabKey"></div>
+
+        <canvas id="gameCanvas"></canvas>
+        
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>

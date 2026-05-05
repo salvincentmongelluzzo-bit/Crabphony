@@ -1,0 +1,149 @@
+/* --- GLOBAL RESET & LAYOUT --- */
+html, body {
+    margin: 0; 
+    padding: 0;
+    width: 100vw; 
+    height: 100vh;
+    overflow: hidden; 
+    background-color: #050505;
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* --- BOOT SCREENS --- */
+#loadingScreen {
+    position: absolute; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background-color: #000000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 100;
+}
+
+#loadingCrab {
+    width: 80px;
+    image-rendering: pixelated;
+    margin-bottom: 20px;
+    animation: loadingRainbow 2s linear infinite;
+}
+
+@keyframes loadingRainbow {
+    0% { filter: hue-rotate(0deg) saturate(3); }
+    100% { filter: hue-rotate(360deg) saturate(3); }
+}
+
+.loader-bar {
+    width: 250px; height: 10px;
+    border: 2px solid #ffffff;
+    border-radius: 4px; overflow: hidden;
+}
+
+.loader-fill {
+    height: 100%; width: 0%;
+    background-color: #ffffff;
+    animation: fillBar 1.5s ease-in-out forwards;
+}
+
+@keyframes fillBar {
+    to { width: 100%; }
+}
+
+#mainMenu {
+    position: absolute; top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background-image: url('background.gif');
+    background-size: cover; background-position: center bottom;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 50;
+    box-shadow: inset 0 0 150px rgba(0,0,0,0.8);
+}
+
+/* New Menu Logo Styling */
+#menuLogo {
+    width: 80%;
+    max-width: 600px;
+    margin-bottom: 40px;
+    /* Keeps the glowing text effect but applies it to your PNG */
+    filter: drop-shadow(4px 4px 0px #0a141e) drop-shadow(0 0 20px rgba(77,166,255,0.5));
+}
+
+.menu-buttons {
+    display: flex; flex-direction: column; gap: 15px; width: 250px;
+}
+
+/* --- MAIN GAME LAYER --- */
+#gameLayer {
+    width: 100vw; height: 100vh;
+    flex-direction: row; 
+}
+
+/* --- SIDEBAR SHOP --- */
+#shop {
+    width: 350px; min-width: 350px; height: 100vh;
+    background: rgba(10, 20, 30, 0.95);
+    border-right: 2px solid #4da6ff; padding: 20px; 
+    box-sizing: border-box; overflow-y: auto; 
+    z-index: 10; box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+}
+
+/* New Sidebar Logo Styling */
+#sidebarLogo {
+    width: 100%;
+    max-width: 280px;
+    display: block;
+    margin: 0 auto 10px auto;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #4da6ff;
+}
+
+/* --- THE TANK CANVAS --- */
+#gameCanvas {
+    flex-grow: 1; min-width: 0; height: 100vh; 
+    display: block; cursor: crosshair;
+    background-image: url('background.gif');
+    background-size: cover; background-position: center bottom;
+    background-repeat: no-repeat; background-color: #0a3c59; 
+}
+
+/* --- HUD & UI OVERLAYS --- */
+#ui {
+    position: absolute; top: 20px; left: 370px; 
+    z-index: 5; pointer-events: none; 
+    background: rgba(0, 0, 0, 0.6); padding: 15px; 
+    border-radius: 8px; border-left: 4px solid #ffcc00;
+}
+
+#crabKey {
+    position: absolute; bottom: 20px; left: 370px; 
+    background: rgba(5, 20, 30, 0.9);
+    border: 1px solid #4da6ff; border-radius: 8px;
+    padding: 12px; display: flex; flex-wrap: wrap;
+    max-width: calc(100% - 400px); gap: 15px;
+    pointer-events: none; font-size: 10px;
+}
+
+/* --- TYPOGRAPHY & BUTTONS --- */
+h2 { color: #4da6ff; text-transform: uppercase; margin-top: 20px; font-size: 14px; }
+
+button {
+    width: 100%; background: #0a141e; border: 1px solid #4da6ff;
+    color: #4da6ff; padding: 12px; font-weight: bold; 
+    cursor: pointer; border-radius: 4px; font-family: inherit; transition: all 0.2s;
+}
+
+button:hover:not(:disabled) { background: #4da6ff; color: #050505; box-shadow: 0 0 10px #4da6ff; }
+button:disabled { border-color: #222; color: #444; cursor: not-allowed; background: #050505; }
+
+#btnHarvest, #btnHardReset { border-color: #ff4d4d; color: #ff4d4d; }
+#btnHarvest:hover:not(:disabled), #btnHardReset:hover:not(:disabled) { background: #ff4d4d; color: white; box-shadow: 0 0 10px #ff4d4d; }
+#btnPrestige { border-color: #ffcc00; color: #ffcc00; }
+#btnPrestige:hover:not(:disabled) { background: #ffcc00; color: black; box-shadow: 0 0 10px #ffcc00; }
+
+#harvestSelect { width: 100%; margin-bottom: 12px; padding: 10px; background: #000; color: #4da6ff; border: 1px solid #4da6ff; font-family: inherit; font-weight: bold; border-radius: 4px; }
+
+/* --- UTILS --- */
+.key-item { display: flex; flex-direction: column; align-items: center; text-align: center; color: white; }
+#shop::-webkit-scrollbar { width: 6px; }
+#shop::-webkit-scrollbar-track { background: #050505; }
+#shop::-webkit-scrollbar-thumb { background: #4da6ff; border-radius: 10px; }
