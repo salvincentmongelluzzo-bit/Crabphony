@@ -1,9 +1,22 @@
-Crabfiny is a neon-infused browser idle game where you manage a vibrant aquatic ecosystem centered on breeding increasingly valuable crabs. The core loop involves populating a tank with base-level crabs—like Red and Blue—and feeding them to generate points. As the tank thrives, you use those points to upgrade food quality and tank capacity, shifting the experience from active clicking to a sleek, passive management simulation that runs smoothly in a Chrome tab.
+Crabphony was developed as an incremental genetic simulation game.
 
-The depth of the game lies in the genetic breeding tree and color-coded tier system. While standard Red, Blue, and Green crabs provide steady income, the real goal is to discover rare mutations like Pink and Orange through strategic feeding and cross-breeding. This adds a discovery element where you strive to unlock every entry in a "Crab-pedia," turning a simple point-generator into a quest for rare biological traits where higher-tier crabs offer exponential point multipliers.
+The Abyssal Genesis
+In the darkest, high pressure trenches of the ocean floor, long after the surface world forgot what it meant to genuinely evolve, the Crabphony Project was initialized. You are the Architect. Your canvas is the abyss, and your medium is pure genetics.
 
-To ensure long-term replayability, Sal, the game uses a "Carcinization" prestige mechanic. Once the current tank reaches its peak efficiency, you can trigger a global reset, evolving the entire operation into a more advanced state. This reset rewards you with permanent "DNA Points" used to buy meta-upgrades—such as increased mutation rates or automated hatchery systems—ensuring that each subsequent "run" starts faster and reaches higher tiers than the one before it.
+It started with a simple, unassailable hypothesis: nature's ultimate, inevitable form is the crab. Everything eventually evolves into one. But natural selection is far too slow; it requires millions of years to achieve perfection. With the construction of the deep-sea Tank and the activation of the first automated pelleted nutrient systems, that timeline was compressed from eons into hours.
 
-Management becomes more complex as you unlock specialized environments like Deep Sea Vents or Coral Reefs. Each habitat introduces new variables like water temperature and salinity that must be optimized using automated sensors and regulators. This layer of strategy forces you to balance resources between buying more crabs and upgrading the life-support systems required to keep the most exotic, high-earning species alive while the game runs in the background.
+The Chromatic Ascent
+The first inhabitants were the Reds hardy, simple, and foundational. But they were only a baseline. Through the relentless, humming computational power of the Genetics Lab, the DNA sequences were cracked and rewritten. Red gave way to the engineered Blue, which mutated into the luminescent Green.
 
-From a technical standpoint, the game is designed to be lightweight and persistent. Using local storage, the game tracks the exact timestamp when the browser tab is closed, allowing the engine to calculate "offline gains" the moment you return. This ensures the crabs are always working and breeding, providing a satisfying "big number" jump after a few hours away, making it a low-friction experience that rewards consistent check-ins without requiring constant attention.
+As the population swelled, the Harvester was brought online. It is a cold, mathematical necessity. To fund further tank expansions and power the lab, the lesser tiers have to be selectively gathered and converted into raw, usable energy points.
+
+With every harvest, the mutations grow more volatile and exponentially more valuable. Pink, Orange, Purple, Yellow, White, and Cyan—each successive generation glows brighter against the dark ocean backdrop, rewriting the rules of biology. The ultimate goal of the lab is the manifestation of the Rainbow anomaly, a creature of shifting, prismatic light and totally unstable DNA, producing passive energy at a rate the baseline Reds could never fathom.
+
+The Great Carcinization
+But evolution is not a straight line; it is a cycle. As the Tank's energy grid maxes out, approaching the critical mass of 100,000 points, reality itself begins to fracture under the sheer weight of such concentrated genetic perfection.
+
+This is the event horizon. This is Carcinization. By initiating this protocol, you intentionally collapse the current timeline. The crabs, the lab upgrades, and the automated feeders—all are compressed by immense pressure into a singular, indestructible singularity: The Golden Barnacle.
+
+Each Golden Barnacle carries the biological memory of the collapsed timeline, permanently altering the physics of the next universe and granting a massive, permanent multiplier to all future energy yields. And so, the tank is empty once more, waiting for the first two Red crabs to drift down into the dark. Faster, stronger, and ever closer to the perfect, ultimate Crabphony.
+
+Created by Sal Mongelluzzo.

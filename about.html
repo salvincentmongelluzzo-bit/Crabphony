@@ -6,28 +6,150 @@
     <title>About | Crabphony</title>
     <link rel="stylesheet" href="style.css">
     <style>
+        body {
+            background-image: url('background.gif');
+            background-size: cover;
+            background-attachment: fixed;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; 
+        }
+
         .page-content {
-            background: rgba(10, 20, 30, 0.95);
+            background: rgba(10, 20, 30, 0.96);
             border: 2px solid #4da6ff;
-            border-radius: 8px;
-            padding: 40px;
-            max-width: 800px;
-            margin: 50px auto;
+            border-radius: 12px;
+            padding: 15px 30px;
+            width: 95vw;
+            max-width: 1400px;
+            height: 95vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+            color: #ffffff;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        
+        .intro-text {
+            font-weight: bold;
+            font-size: 1em;
+            margin-bottom: 10px;
             text-align: center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            color: #4da6ff;
+        }
+
+        .book-container {
+            display: flex;
+            width: 100%;
+            flex-grow: 1;
+            gap: 0;
+            border-top: 1px solid rgba(77, 166, 255, 0.3);
+            border-bottom: 1px solid rgba(77, 166, 255, 0.3);
+            padding: 15px 0;
+            margin: 5px 0;
+            overflow: hidden;
+        }
+
+        .page {
+            flex: 1;
+            text-align: left;
+            padding: 0 30px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page.left {
+            border-right: 2px solid rgba(77, 166, 255, 0.2);
+            position: relative;
+        }
+
+        .page.left::after {
+            content: "";
+            position: absolute;
+            top: 10px;
+            bottom: 10px;
+            right: 2px;
+            width: 20px;
+            background-image: 
+                radial-gradient(circle, rgba(255,204,0,0.4) 1px, transparent 1px),
+                radial-gradient(circle, rgba(255,204,0,0.4) 1px, transparent 1px);
+            background-position: center top, center bottom;
+            background-repeat: no-repeat;
+            opacity: 0.5;
+        }
+
+        .book-container h3 {
+            color: #4da6ff;
+            font-size: 1.1em;
+            margin-top: 0;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .book-container p {
+            line-height: 1.4;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            font-weight: normal;
+            text-align: justify;
+        }
+
+        .credits-text {
+            font-weight: bold;
+            font-size: 1em;
+            color: #ffcc00;
+            margin-top: 10px;
+        }
+
+        button {
+            margin-top: 10px;
+            width: 200px;
+            cursor: pointer;
+            padding: 8px;
+            font-size: 0.9em;
         }
     </style>
 </head>
-<body style="background-image: url('background.gif'); background-size: cover;">
+<body>
     
     <div class="page-content">
-        <img src="crabphony.png" alt="Crabphony" style="max-width: 300px; margin-bottom: 20px;">
-        <h2>About The Game</h2>
+        <img src="crabphony.png" alt="Crabphony" style="max-height: 60px; margin-bottom: 5px;">
         
-        <p>Crabphony was developed as an incremental genetic simulation game.</p>
-        <p>Created by Sal Mongelluzzo.</p>
+        <h2 style="font-weight: bold; font-size: 1.4em; margin: 0; text-transform: uppercase; letter-spacing: 1.5px;">About The Game</h2>
+        <p class="intro-text">Crabphony was developed as an incremental genetic simulation game.</p>
+        
+        <div class="book-container">
+            <div class="page left">
+                <h3>The Abyssal Genesis</h3>
+                <p>In the darkest, high pressure trenches of the ocean floor, long after the surface world forgot what it meant to genuinely evolve, the Crabphony Project was initialized. You are the Architect. Your canvas is the abyss, and your medium is pure genetics.</p>
+                <p>It started with a simple, unassailable hypothesis: nature's ultimate, inevitable form is the crab. Everything eventually evolves into one. But natural selection is far too slow; it requires millions of years to achieve perfection. With the construction of the deep-sea Tank and the activation of the first automated pelleted nutrient systems, that timeline was compressed from eons into hours.</p>
 
-        <button onclick="window.location.href='/'" style="max-width: 200px; margin-top: 30px;">BACK TO MENU</button>
+                <h3>The Chromatic Ascent</h3>
+                <p>The first inhabitants were the Reds hardy, simple, and foundational. But they were only a baseline. Through the relentless, humming computational power of the Genetics Lab, the DNA sequences were cracked and rewritten. Red gave way to the engineered Blue, which mutated into the luminescent Green.</p>
+                
+                <p>As the population swelled, the Harvester was brought online. It is a cold, mathematical necessity. To fund further tank expansions and power the lab, the lesser tiers have to be selectively gathered and converted into raw, usable energy points.</p>
+            </div>
+
+            <div class="page right">
+                <p>With every harvest, the mutations grow more volatile and exponentially more valuable. Pink, Orange, Purple, Yellow, White, and Cyan—each successive generation glows brighter against the dark ocean backdrop, rewriting the rules of biology. The ultimate goal of the lab is the manifestation of the Rainbow anomaly, a creature of shifting, prismatic light and totally unstable DNA, producing passive energy at a rate the baseline Reds could never fathom.</p>
+
+                <h3>The Great Carcinization</h3>
+                <p>But evolution is not a straight line; it is a cycle. As the Tank's energy grid maxes out, approaching the critical mass of 100,000 points, reality itself begins to fracture under the sheer weight of such concentrated genetic perfection.</p>
+                <p>This is the event horizon. This is Carcinization. By initiating this protocol, you intentionally collapse the current timeline. The crabs, the lab upgrades, and the automated feeders—all are compressed by immense pressure into a singular, indestructible singularity: <span style="color: #ffcc00; font-weight: bold;">The Golden Barnacle</span>.</p>
+                <p>Each Golden Barnacle carries the biological memory of the collapsed timeline, permanently altering the physics of the next universe and granting a massive, permanent multiplier to all future energy yields. And so, the tank is empty once more, waiting for the first two Red crabs to drift down into the dark. Faster, stronger, and ever closer to the perfect, ultimate Crabphony.</p>
+            </div>
+        </div>
+
+        <p class="credits-text">Created by Sal Mongelluzzo.</p>
+
+        <button onclick="window.location.href='index.html'">BACK TO MENU</button>
     </div>
 
 </body>
