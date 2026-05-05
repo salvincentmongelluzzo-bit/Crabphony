@@ -32,7 +32,6 @@
             box-shadow: 0 0 30px rgba(0,0,0,0.9);
             color: #ffffff;
             box-sizing: border-box;
-            overflow: hidden;
         }
         
         .intro-text {
@@ -43,6 +42,7 @@
             color: #4da6ff;
         }
 
+        /* The scrollable "Box" for the story */
         .book-container {
             display: flex;
             width: 100%;
@@ -52,7 +52,27 @@
             border-bottom: 1px solid rgba(77, 166, 255, 0.3);
             padding: 15px 0;
             margin: 5px 0;
-            overflow: hidden;
+            
+            /* SCROLLING LOGIC */
+            overflow-y: auto; 
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar Styling */
+        .book-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .book-container::-webkit-scrollbar-track {
+            background: rgba(10, 20, 30, 0.5);
+            border-radius: 10px;
+        }
+        .book-container::-webkit-scrollbar-thumb {
+            background: #4da6ff;
+            border-radius: 10px;
+            border: 2px solid rgba(10, 20, 30, 1);
+        }
+        .book-container::-webkit-scrollbar-thumb:hover {
+            background: #ffcc00; /* Turns gold on hover to match your accents */
         }
 
         .page {
@@ -69,6 +89,7 @@
             position: relative;
         }
 
+        /* Spine Motif */
         .page.left::after {
             content: "";
             position: absolute;
@@ -95,8 +116,8 @@
 
         .book-container p {
             line-height: 1.4;
-            margin-bottom: 10px;
-            font-size: 0.9em;
+            margin-bottom: 15px;
+            font-size: 0.95em;
             font-weight: normal;
             text-align: justify;
         }
@@ -129,7 +150,7 @@
             <div class="page left">
                 <h3>The Abyssal Genesis</h3>
                 <p>In the darkest, high pressure trenches of the ocean floor, long after the surface world forgot what it meant to genuinely evolve, the Crabphony Project was initialized. You are the Architect. Your canvas is the abyss, and your medium is pure genetics.</p>
-                <p>It started with a simple, unassailable hypothesis: nature's ultimate, inevitable form is the crab. Everything eventually evolves into one. But natural selection is far too slow; it requires millions of years to achieve perfection. With the construction of the deep-sea Tank and the activation of the first automated pelleted nutrient systems, that timeline was compressed from eons into hours.</p>
+                <p>It started with a simple, unassailable hypothesis: nature's ultimate, inevitable form is the crab. Everything eventually evolves into one. But natural selection is far too slow; it requires millions of years to achieve perfection. With the construction of the deep sea Tank and the activation of the first automated pelleted nutrient systems, that timeline was compressed from eons into hours.</p>
 
                 <h3>The Chromatic Ascent</h3>
                 <p>The first inhabitants were the Reds hardy, simple, and foundational. But they were only a baseline. Through the relentless, humming computational power of the Genetics Lab, the DNA sequences were cracked and rewritten. Red gave way to the engineered Blue, which mutated into the luminescent Green.</p>
@@ -138,11 +159,11 @@
             </div>
 
             <div class="page right">
-                <p>With every harvest, the mutations grow more volatile and exponentially more valuable. Pink, Orange, Purple, Yellow, White, and Cyan—each successive generation glows brighter against the dark ocean backdrop, rewriting the rules of biology. The ultimate goal of the lab is the manifestation of the Rainbow anomaly, a creature of shifting, prismatic light and totally unstable DNA, producing passive energy at a rate the baseline Reds could never fathom.</p>
+                <p>With every harvest, the mutations grow more volatile and exponentially more valuable. Pink, Orange, Purple, Yellow, White, and Cyan each successive generation glows brighter against the dark ocean backdrop, rewriting the rules of biology. The ultimate goal of the lab is the manifestation of the Rainbow anomaly, a creature of shifting, prismatic light and totally unstable DNA, producing passive energy at a rate the baseline Reds could never fathom.</p>
 
                 <h3>The Great Carcinization</h3>
                 <p>But evolution is not a straight line; it is a cycle. As the Tank's energy grid maxes out, approaching the critical mass of 100,000 points, reality itself begins to fracture under the sheer weight of such concentrated genetic perfection.</p>
-                <p>This is the event horizon. This is Carcinization. By initiating this protocol, you intentionally collapse the current timeline. The crabs, the lab upgrades, and the automated feeders—all are compressed by immense pressure into a singular, indestructible singularity: <span style="color: #ffcc00; font-weight: bold;">The Golden Barnacle</span>.</p>
+                <p>This is the event horizon. This is Carcinization. By initiating this protocol, you intentionally collapse the current timeline. The crabs, the lab upgrades, and the automated feeders all are compressed by immense pressure into a singular, indestructible singularity: <span style="color: #ffcc00; font-weight: bold;">The Golden Barnacle</span>.</p>
                 <p>Each Golden Barnacle carries the biological memory of the collapsed timeline, permanently altering the physics of the next universe and granting a massive, permanent multiplier to all future energy yields. And so, the tank is empty once more, waiting for the first two Red crabs to drift down into the dark. Faster, stronger, and ever closer to the perfect, ultimate Crabphony.</p>
             </div>
         </div>
