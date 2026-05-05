@@ -11,6 +11,7 @@ const uiScreens = {
 const menuBtns = {
     newGame: document.getElementById('btnNewGame'),
     continue: document.getElementById('btnContinueGame'),
+    mobile: document.getElementById('btnMobile'),
     howToPlay: document.getElementById('btnHowToPlay'),
     aboutUs: document.getElementById('btnAboutUs')
 };
@@ -306,13 +307,16 @@ btnPrestige.addEventListener('click', () => {
 
 canvas.addEventListener('mousedown', (e) => { const r = canvas.getBoundingClientRect(); foods.push(new Food(e.clientX - r.left, e.clientY - r.top)); });
 
-// Fixed relative paths for live deployment
 menuBtns.howToPlay.addEventListener('click', () => {
     window.location.href = 'howtoplay.html'; 
 });
 
 menuBtns.aboutUs.addEventListener('click', () => {
     window.location.href = 'about.html'; 
+});
+
+menuBtns.mobile.addEventListener('click', () => {
+    window.location.href = 'mobile.html'; 
 });
 
 // Populate Harvester Dropdown with Colors
