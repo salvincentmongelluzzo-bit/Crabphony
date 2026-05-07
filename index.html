@@ -4,69 +4,940 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crabphony | Deep Sea Evolution</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* =============================================
+           GLOBAL RESET & BASE
+        ============================================= */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #050a0f;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            padding-top: 32px;
+        }
+
+        /* =============================================
+           LOADING SCREEN
+        ============================================= */
+        #loadingScreen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        #loadingCrab {
+            width: 90px;
+            image-rendering: pixelated;
+            margin-bottom: 24px;
+            animation: loadingRainbow 2s linear infinite;
+            filter: drop-shadow(0 0 18px rgba(77,166,255,0.8));
+        }
+
+        @keyframes loadingRainbow {
+            0%   { filter: hue-rotate(0deg)   saturate(3) drop-shadow(0 0 14px rgba(77,166,255,0.9)); }
+            100% { filter: hue-rotate(360deg) saturate(3) drop-shadow(0 0 14px rgba(77,166,255,0.9)); }
+        }
+
+        .loader-bar {
+            width: 260px;
+            height: 10px;
+            border: 2px solid #4da6ff;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 0 12px rgba(77,166,255,0.4);
+        }
+
+        .loader-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4da6ff, #00ffcc);
+            animation: fillBar 1.6s ease-in-out forwards;
+        }
+
+        @keyframes fillBar { to { width: 100%; } }
+
+        .loader-label {
+            margin-top: 14px;
+            font-size: 11px;
+            letter-spacing: 3px;
+            color: #4da6ff;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        /* =============================================
+           MAIN MENU
+        ============================================= */
+        #mainMenu {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background-image: url('background.gif');
+            background-size: cover;
+            background-position: center bottom;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            box-shadow: inset 0 0 200px rgba(0,0,0,0.75);
+        }
+
+        #menuLogo {
+            width: 80%;
+            max-width: 580px;
+            margin-bottom: 44px;
+            filter: drop-shadow(4px 4px 0px #0a141e)
+                    drop-shadow(0 0 30px rgba(77,166,255,0.6));
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { filter: drop-shadow(4px 4px 0px #0a141e) drop-shadow(0 0 20px rgba(77,166,255,0.5)); }
+            50%       { filter: drop-shadow(4px 4px 0px #0a141e) drop-shadow(0 0 45px rgba(77,166,255,0.9)); }
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 260px;
+        }
+
+        .menu-buttons button {
+            width: 100%;
+            background: rgba(10, 20, 30, 0.88);
+            border: 1px solid #4da6ff;
+            color: #4da6ff;
+            padding: 14px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.18s;
+            text-transform: uppercase;
+        }
+
+        .menu-buttons button:hover:not(:disabled) {
+            background: #4da6ff;
+            color: #050a0f;
+            box-shadow: 0 0 20px rgba(77,166,255,0.7);
+            transform: translateY(-1px);
+        }
+
+        .menu-buttons button:disabled {
+            border-color: #1a2a3a;
+            color: #2a4a6a;
+            cursor: not-allowed;
+        }
+
+        .menu-version {
+            margin-top: 28px;
+            font-size: 10px;
+            color: rgba(77,166,255,0.4);
+            letter-spacing: 2px;
+        }
+
+        /* =============================================
+           GAME LAYER  (sidebar + canvas)
+        ============================================= */
+        #gameLayer {
+            width: 100vw;
+            height: calc(100vh - 32px);
+            display: flex;
+            flex-direction: row;
+        }
+
+        /* ---- SIDEBAR ---- */
+        #shop {
+            width: 100%;
+            min-width: 0;
+            background: transparent;
+            border-right: none;
+            padding: 14px 14px 20px;
+            overflow: visible;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        #shop::-webkit-scrollbar { width: 5px; }
+        #shop::-webkit-scrollbar-track { background: #050a0f; }
+        #shop::-webkit-scrollbar-thumb { background: #4da6ff; border-radius: 10px; }
+
+        #sidebarLogo {
+            width: 100%;
+            max-width: 280px;
+            display: block;
+            margin: 0 auto 14px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid rgba(77,166,255,0.4);
+            filter: drop-shadow(0 0 10px rgba(77,166,255,0.3));
+        }
+
+        /* Section headers */
+        .shop-section {
+            margin-top: 18px;
+            border-top: 1px solid rgba(77,166,255,0.25);
+            padding-top: 14px;
+        }
+
+        .shop-section:first-of-type { margin-top: 0; border-top: none; padding-top: 0; }
+
+        .shop-section h2 {
+            font-size: 11px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #4da6ff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .shop-section h2.gold  { color: #ffcc00; }
+        .shop-section h2.red   { color: #ff4d4d; }
+        .shop-section h2.teal  { color: #00ffcc; }
+
+        /* Sidebar buttons */
+        #shop button {
+            width: 100%;
+            background: #070f18;
+            border: 1px solid #4da6ff;
+            color: #4da6ff;
+            padding: 11px 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            transition: all 0.15s;
+            margin-bottom: 8px;
+            text-align: left;
+            line-height: 1.3;
+        }
+
+        #shop button:hover:not(:disabled) {
+            background: #4da6ff;
+            color: #050a0f;
+            box-shadow: 0 0 12px rgba(77,166,255,0.5);
+        }
+
+        #shop button:disabled {
+            border-color: #111c28;
+            color: #1e3a52;
+            cursor: not-allowed;
+            background: #050a0f;
+        }
+
+        #btnPrestige {
+            border-color: #ffcc00 !important;
+            color: #ffcc00 !important;
+        }
+        #btnPrestige:hover:not(:disabled) {
+            background: #ffcc00 !important;
+            color: #000 !important;
+            box-shadow: 0 0 16px rgba(255,204,0,0.6) !important;
+        }
+
+        #btnHardReset {
+            border-color: #ff4d4d !important;
+            color: #ff4d4d !important;
+        }
+        #btnHardReset:hover:not(:disabled) {
+            background: #ff4d4d !important;
+            color: #fff !important;
+            box-shadow: 0 0 12px rgba(255,77,77,0.5) !important;
+        }
+
+        #harvestSelect {
+            width: 100%;
+            margin-bottom: 8px;
+            padding: 10px;
+            background: #000;
+            color: #4da6ff;
+            border: 1px solid #4da6ff;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .warn-text {
+            color: #ff4d4d;
+            font-size: 10px;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        /* ---- CANVAS WRAPPER ---- */
+        #canvasWrapper {
+            flex: 1 1 0;
+            position: relative;
+            min-width: 0;
+            min-height: 0;
+            align-self: stretch;
+            overflow: hidden;
+        }
+
+        /* ---- CANVAS ---- */
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+            background-image: url('background.gif');
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            background-color: #0a3c59;
+        }
+
+        /* ---- HUD OVERLAY ---- */
+        #ui {
+            position: absolute;
+            top: 18px;
+            left: 18px;
+            z-index: 5;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.65);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #ffcc00;
+            backdrop-filter: blur(4px);
+            min-width: 200px;
+        }
+
+        #ui p {
+            margin: 3px 0;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        #ui .hud-label { color: #aaa; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+        #ui .hud-val   { color: #fff; }
+        #ui .hud-gold  { color: #ffcc00; }
+
+        /* ---- CRAB KEY (now in right panel) ---- */
+        #crabKey {
+            padding: 0 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            border-top: 1px solid rgba(0,255,204,0.18);
+            margin-top: 2px;
+        }
+
+        #crabKeyHeader {
+            font-size: 10px;
+            font-weight: bold;
+            color: #00ffcc;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 10px 0 7px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .key-item {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 7px;
+            padding: 3px 5px;
+            border-radius: 4px;
+            background: rgba(0,255,204,0.03);
+            border: 1px solid rgba(0,255,204,0.07);
+            transition: background 0.15s;
+        }
+
+        .key-item:hover {
+            background: rgba(0,255,204,0.08);
+        }
+
+        .key-crab-canvas {
+            flex-shrink: 0;
+        }
+
+        .key-name {
+            font-size: 10px;
+            font-weight: bold;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .key-count {
+            font-size: 10px;
+            color: #fff;
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+            padding: 1px 5px;
+            min-width: 20px;
+            text-align: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .rarity-val {
+            font-size: 9px;
+            color: #00ffcc88;
+            text-align: right;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 38px;
+        }
+
+        .lvl-badge {
+            display: inline-block;
+            font-size: 9px;
+            background: rgba(77,166,255,0.12);
+            border: 1px solid rgba(77,166,255,0.35);
+            border-radius: 3px;
+            padding: 1px 5px;
+            margin-left: 3px;
+            color: #4da6ff;
+        }
+        .lvl-badge.maxed { border-color: rgba(0,255,136,0.5); color: #00ff88; }
+
+        #shop button .sub { opacity: 0.65; font-size: 10px; display: block; margin-top: 2px; }
+
+        /* Notifications */
+        .game-notif {
+            display: none;
+            position: fixed;
+            right: 24px;
+            z-index: 400;
+            background: rgba(5,12,20,0.97);
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            max-width: 290px;
+            pointer-events: none;
+            backdrop-filter: blur(6px);
+        }
+        #achievementNotif { top: 24px; border: 2px solid #ffcc00; color: #ffcc00; box-shadow: 0 0 20px rgba(255,204,0,0.25); }
+        #threatNotif      { top: 150px; border: 2px solid #ff4d4d; color: #ff4d4d; box-shadow: 0 0 20px rgba(255,77,77,0.25); }
+
+        /* =============================================
+           TOP NEWS TICKER
+        ============================================= */
+        #newsTicker {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 32px;
+            background: #000813;
+            border-bottom: 2px solid #00ffcc;
+            display: flex;
+            align-items: center;
+            z-index: 500;
+            overflow: hidden;
+        }
+        .ticker-brand {
+            padding: 0 14px;
+            font-size: 9px;
+            font-weight: bold;
+            color: #00ffcc;
+            white-space: nowrap;
+            border-right: 1px solid rgba(0,255,204,0.3);
+            background: #001a14;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            letter-spacing: 2px;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .ticker-live-dot {
+            width: 7px; height: 7px;
+            background: #ff2200;
+            border-radius: 50%;
+            animation: livePulse 1s ease-in-out infinite alternate;
+            flex-shrink: 0;
+        }
+        @keyframes livePulse {
+            from { opacity: 1; box-shadow: 0 0 4px #ff2200; }
+            to   { opacity: 0.3; box-shadow: none; }
+        }
+        .ticker-scroll-container {
+            flex: 1;
+            overflow: hidden;
+            height: 100%;
+            position: relative;
+        }
+        #topTickerInner {
+            position: absolute;
+            white-space: nowrap;
+            font-size: 11px;
+            color: #c8ffe8;
+            line-height: 32px;
+            padding: 0 20px;
+            animation: topTickerScroll 55s linear infinite;
+        }
+        @keyframes topTickerScroll {
+            0%   { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* =============================================
+           LEFT / RIGHT COLLAPSIBLE PANELS
+        ============================================= */
+        #leftPanel {
+            position: relative;
+            width: 290px;
+            min-width: 290px;
+            flex-shrink: 0;
+            align-self: stretch;
+            transition: width 0.28s ease, min-width 0.28s ease;
+            background: rgba(5, 12, 20, 0.97);
+            border-right: 2px solid #4da6ff;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+        }
+        #leftPanel.collapsed {
+            width: 28px;
+            min-width: 28px;
+        }
+        #leftPanelInner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #4da6ff #050a0f;
+        }
+        #leftPanel.collapsed #leftPanelInner {
+            visibility: hidden;
+        }
+        #leftPanelInner::-webkit-scrollbar { width: 5px; }
+        #leftPanelInner::-webkit-scrollbar-track { background: #050a0f; }
+        #leftPanelInner::-webkit-scrollbar-thumb { background: #4da6ff; border-radius: 10px; }
+
+        #rightPanel {
+            position: relative;
+            width: 270px;
+            min-width: 270px;
+            flex-shrink: 0;
+            align-self: stretch;
+            transition: width 0.28s ease, min-width 0.28s ease;
+            background: rgba(3, 10, 16, 0.97);
+            border-left: 2px solid #00ffcc;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.5);
+        }
+        #rightPanel.collapsed {
+            width: 28px;
+            min-width: 28px;
+        }
+        #rightPanelInner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #00ffcc #030a10;
+        }
+        #rightPanel.collapsed #rightPanelInner {
+            visibility: hidden;
+        }
+        #rightPanelInner::-webkit-scrollbar { width: 5px; }
+        #rightPanelInner::-webkit-scrollbar-track { background: #030a10; }
+        #rightPanelInner::-webkit-scrollbar-thumb { background: #00ffcc; border-radius: 10px; }
+
+        /* Panel toggle buttons */
+        .panel-toggle {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 20;
+            width: 20px;
+            height: 52px;
+            cursor: pointer;
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            border: none;
+            transition: background 0.15s;
+        }
+        #toggleLeft {
+            right: 0;
+            background: rgba(77,166,255,0.18);
+            color: #4da6ff;
+            border-left: 1px solid rgba(77,166,255,0.4);
+            border-radius: 0 4px 4px 0;
+        }
+        #toggleLeft:hover { background: rgba(77,166,255,0.35); }
+        #toggleRight {
+            left: 0;
+            background: rgba(0,255,204,0.15);
+            color: #00ffcc;
+            border-right: 1px solid rgba(0,255,204,0.4);
+            border-radius: 4px 0 0 4px;
+        }
+        #toggleRight:hover { background: rgba(0,255,204,0.28); }
+
+        /* =============================================
+           MARKET SIDEBAR (right panel contents)
+        ============================================= */
+        #marketSidebar {
+            padding: 14px 12px 20px;
+        }
+        #marketSidebar h2 {
+            color: #00ffcc;
+            font-size: 12px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0,255,204,0.2);
+        }
+        .mkt-row { display: flex; align-items: center; gap: 5px; padding: 4px 6px; border-radius: 3px; background: rgba(0,255,204,0.04); border: 1px solid rgba(0,255,204,0.1); margin-bottom: 3px; }
+        .mkt-name { font-size: 10px; font-weight: bold; width: 44px; }
+        .mkt-price { font-size: 10px; font-weight: bold; flex: 1; text-align: right; color: #fff; }
+        .mkt-change { font-size: 10px; font-weight: bold; width: 46px; text-align: right; }
+        .mkt-chart { flex: 1.5; height: 18px; }
+        .mkt-event-badge { font-size: 8px; background: rgba(255,204,0,0.2); border: 1px solid #ffcc00; color: #ffcc00; padding: 1px 4px; border-radius: 3px; white-space: nowrap; }
+        .evt-entry { background: rgba(0,0,0,0.55); border-left: 3px solid; border-radius: 0 3px 3px 0; padding: 4px 6px; margin-bottom: 3px; }
+        .evt-title { font-weight: bold; font-size: 10px; }
+        .evt-desc { color: #888; font-size: 9px; margin-top: 1px; }
+        .mkt-cooldown-bar {
+            height: 3px;
+            background: rgba(255,204,0,0.15);
+            border-radius: 2px;
+            margin-top: 2px;
+            overflow: hidden;
+        }
+        .mkt-cooldown-fill {
+            height: 100%;
+            background: #ffcc00;
+            border-radius: 2px;
+            transition: width 1s linear;
+        }
+
+        /* =============================================
+           BREAKING NEWS BANNER
+        ============================================= */
+        #breakingNews {
+            position: fixed;
+            bottom: 0; left: 0;
+            width: 100%;
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+        }
+        #breakingNews.show {
+            display: block;
+            animation: bnSlideUp 0.45s cubic-bezier(0.22,1,0.36,1) forwards;
+        }
+        @keyframes bnSlideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        .bn-bar {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(90deg, #0a0000 0%, #120000 40%, #0a0000 100%);
+            border-top: 3px solid #ff1a00;
+            height: 56px;
+            padding: 0 18px;
+            gap: 14px;
+            box-shadow: 0 -4px 30px rgba(255,26,0,0.35);
+        }
+        .bn-logo-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #ff1a00;
+            padding: 5px 10px;
+            border-radius: 4px;
+            min-width: 66px;
+            flex-shrink: 0;
+        }
+        .bn-logo { font-size: 15px; line-height: 1; }
+        .bn-station {
+            font-size: 6.5px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .bn-badge {
+            background: #ff1a00;
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 5px 10px;
+            letter-spacing: 2.5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            animation: bnPulse 0.8s ease infinite alternate;
+        }
+        @keyframes bnPulse {
+            from { background: #ff1a00; }
+            to   { background: #aa0000; }
+        }
+        .bn-divider {
+            width: 2px;
+            height: 32px;
+            background: rgba(255,255,255,0.2);
+            flex-shrink: 0;
+        }
+        .bn-headline {
+            flex: 1;
+            font-size: 15px;
+            font-weight: bold;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 10px rgba(255,100,50,0.4);
+        }
+        .bn-market-note {
+            font-size: 11px;
+            color: #ffcc00;
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
+    <!-- ==================== LOADING SCREEN ==================== -->
     <div id="loadingScreen">
         <img src="crab.png" id="loadingCrab" alt="Loading Crab">
         <div class="loader-bar">
             <div class="loader-fill"></div>
         </div>
+        <p class="loader-label">Initializing Genetics Lab...</p>
     </div>
 
+    <!-- ==================== MAIN MENU ==================== -->
     <div id="mainMenu" style="display: none;">
         <img src="crabphony.png" id="menuLogo" alt="Crabphony">
         <div class="menu-buttons">
-            <button id="btnNewGame">NEW GAME</button>
-            <button id="btnContinueGame">CONTINUE</button>
-            <button id="btnMobile">CRABPHONY MOBILE</button>
-            <button id="btnHowToPlay">HOW TO PLAY</button>
-            <button id="btnAboutUs">ABOUT US</button>
+            <button id="btnNewGame">⚗️ New Game</button>
+            <button id="btnContinueGame">▶ Continue</button>
+            <button id="btnMobile">📱 Crabphony Mobile</button>
+            <button id="btnHowToPlay">📖 How To Play</button>
+            <button id="btnAboutUs">🦀 About</button>
+        </div>
+        <div id="menuStats" style="display:none; margin-top:20px; padding:10px 22px; background:rgba(0,0,0,0.55); border:1px solid rgba(77,166,255,0.25); border-radius:6px; font-size:10px; color:rgba(77,166,255,0.65); letter-spacing:1.5px; text-align:center; line-height:1.9;"></div>
+        <p class="menu-version">v3.0 — Abyss Edition</p>
+    </div>
+
+    <!-- ==================== TOP NEWS TICKER ==================== -->
+    <div id="newsTicker" style="display:none;">
+        <div class="ticker-brand">
+            <div class="ticker-live-dot"></div>
+            CRAB-TV MARKET
+        </div>
+        <div class="ticker-scroll-container">
+            <div id="topTickerInner">Connecting to Crab Stock Exchange...</div>
         </div>
     </div>
 
+    <!-- ==================== GAME LAYER ==================== -->
     <div id="gameLayer" style="display: none;">
-        
-        <div id="shop">
-            <img src="crabphony.png" id="sidebarLogo" alt="Crabphony">
-            
-            <h2>Upgrades & Management</h2>
-            <button id="btnBuyCapacity">Expand Tank (+5 Space) - Cost: <span id="costCapacity">100</span></button>
-            <button id="btnBuyBlueCrab">Import Blue Crab (Cost: <span id="costBlueCrab">50</span>)</button>
-            <button id="btnBuyAutoFeeder">Upgrade Auto-Feeder (Lvl <span id="lvlFeeder">0</span>) - Cost: <span id="costFeeder">200</span></button>
-            <button id="btnBuyMutation">Upgrade Genetics (Lvl <span id="lvlMutation">0</span>) - Cost: <span id="costMutation">500</span></button>
-            
-            <div style="margin-top: 20px; border-top: 1px solid #4da6ff; padding-top: 15px;">
-                <h2 style="color: #4da6ff; font-size: 16px; margin-top: 0;">Harvester</h2>
-                <select id="harvestSelect"></select>
-                <button id="btnHarvest">Harvest Selected (+<span id="harvestYield">0</span> pts)</button>
-            </div>
-            
-            <div style="margin-top: 30px; border-top: 1px solid #4da6ff; padding-top: 15px;">
-                <h2 style="color: #ffcc00; font-size: 16px;">Evolution</h2>
-                <button id="btnPrestige">CARCINIZE (Requires 100,000 Pts)</button>
-            </div>
 
-            <div style="margin-top: 30px; border-top: 1px solid #ff4d4d; padding-top: 15px;">
-                <p style="color: #ff4d4d; font-size: 11px; margin-bottom: 5px;">WARNING: THIS WIPES EVERYTHING</p>
-                <button id="btnHardReset">ERASE ALL DATA</button>
+        <!-- LEFT PANEL (shop) -->
+        <div id="leftPanel">
+            <button class="panel-toggle" id="toggleLeft" title="Collapse shop">◀</button>
+            <div id="leftPanelInner">
+                <div id="shop">
+                    <img src="crabphony.png" id="sidebarLogo" alt="Crabphony">
+
+                    <!-- Tank Management -->
+                    <div class="shop-section">
+                        <h2>🪣 Tank Management</h2>
+                        <button id="btnBuyCapacity">
+                            Expand Tank <span class="lvl-badge" id="lvlCapacity">Lv 0</span>
+                            <span class="sub">+5 slots · Cost: <span id="costCapacity">100</span> pts</span>
+                        </button>
+                        <button id="btnBuyFiltration">
+                            Water Filtration <span class="lvl-badge" id="lvlFiltration">Lv 0</span>
+                            <span class="sub">Slows aging · <span id="costFiltration">400</span> pts</span>
+                        </button>
+                        <button id="btnBuyHeating">
+                            Heating System <span class="lvl-badge" id="lvlHeating">Lv 0</span>
+                            <span class="sub">+50% rare income · <span id="costHeating">1000</span> pts</span>
+                        </button>
+                    </div>
+
+                    <!-- Breeding Lab -->
+                    <div class="shop-section">
+                        <h2>🧬 Breeding Lab</h2>
+                        <button id="btnBuyBlueCrab">
+                            Import Blue Crab
+                            <span class="sub">Cost: <span id="costBlueCrab">50</span> pts</span>
+                        </button>
+                        <button id="btnBuyAutoFeeder">
+                            Auto-Feeder <span class="lvl-badge" id="lvlFeeder">Lv 0</span>
+                            <span class="sub">Cost: <span id="costFeeder">200</span> pts</span>
+                        </button>
+                        <button id="btnBuyKelpFarm">
+                            Kelp Farm <span class="lvl-badge" id="lvlKelpFarm">Lv 0</span>
+                            <span class="sub">Passive food · <span id="costKelpFarm">600</span> pts</span>
+                        </button>
+                        <button id="btnBuyCrabWhisperer">
+                            Crab Whisperer <span class="lvl-badge" id="lvlCrabWhisperer">Lv 0</span>
+                            <span class="sub">Wider breed radius · <span id="costCrabWhisperer">3000</span> pts</span>
+                        </button>
+                    </div>
+
+                    <!-- Research -->
+                    <div class="shop-section">
+                        <h2>🔬 Research</h2>
+                        <button id="btnBuyMutation">
+                            Genetics Lab <span class="lvl-badge" id="lvlMutation">Lv 0</span>
+                            <span class="sub">Cost: <span id="costMutation">500</span> pts</span>
+                        </button>
+                        <button id="btnBuyMutationBoost">
+                            Mutation Accelerator <span class="lvl-badge" id="lvlMutationBoost">Lv 0</span>
+                            <span class="sub">+50% mutation odds · <span id="costMutationBoost">8000</span> pts</span>
+                        </button>
+                    </div>
+
+                    <!-- Security -->
+                    <div class="shop-section">
+                        <h2>🛡️ Security</h2>
+                        <button id="btnBuyPredatorGuard">
+                            Predator Guard <span class="lvl-badge" id="lvlPredatorGuard">Lv 0</span>
+                            <span class="sub">Deflects attacks · <span id="costPredatorGuard">750</span> pts</span>
+                        </button>
+                    </div>
+
+                    <!-- Economy -->
+                    <div class="shop-section">
+                        <h2>💰 Economy</h2>
+                        <button id="btnBuyMarketInsider">
+                            Market Insider <span class="lvl-badge" id="lvlMarketInsider">Lv 0</span>
+                            <span class="sub">+25% harvest yield · <span id="costMarketInsider">2500</span> pts</span>
+                        </button>
+                    </div>
+
+                    <!-- Harvester -->
+                    <div class="shop-section">
+                        <h2>🌾 Harvester</h2>
+                        <select id="harvestSelect"></select>
+                        <button id="btnHarvest">
+                            Harvest Selected
+                            <span class="sub">+<span id="harvestYield">0</span> pts · <span id="harvestCooldownLabel" style="color:#ffcc00;"></span></span>
+                        </button>
+                    </div>
+
+                    <!-- Evolution / Prestige -->
+                    <div class="shop-section">
+                        <h2 class="gold">⭐ Evolution</h2>
+                        <p style="font-size:10px; color:#666; margin-bottom:8px;">Prestiges: <span id="prestigeCountDisplay">0</span></p>
+                        <button id="btnPrestige">
+                            CARCINIZE
+                            <span class="sub">Requires 100,000 pts → Golden Barnacles</span>
+                        </button>
+                        <button id="btnPrestige2" style="display:none; border-color:#00ffcc !important; color:#00ffcc !important; margin-top:6px;">
+                            ⚓ ABYSSAL DIVE
+                            <span class="sub" style="color:#00ffcc;">10M pts + 3 prestiges → Abyssal Pearl</span>
+                        </button>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="shop-section">
+                        <h2 class="red">☠️ Danger Zone</h2>
+                        <p class="warn-text">⚠ THIS WIPES EVERYTHING</p>
+                        <button id="btnHardReset">ERASE ALL DATA</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div id="ui">
-            <p>Points: <span id="scoreDisplay">0.0</span></p>
-            <p>Population: <span id="popDisplay">2</span> / <span id="maxPopDisplay">10</span></p>
-            <p style="color: #ffcc00; font-size: 14px;">Multiplier: x<span id="multiplierDisplay">1.0</span></p>
-            <p style="color: #ffcc00; font-size: 14px;">Golden Barnacles: <span id="barnacleDisplay">0</span></p>
+        <!-- CENTER: CANVAS WRAPPER -->
+        <div id="canvasWrapper">
+            <!-- HUD -->
+            <div id="ui">
+                <p class="hud-label">Points</p>
+                <p class="hud-val" style="font-size:16px;">⚡ <span id="scoreDisplay">0.0</span></p>
+                <p class="hud-label" style="margin-top:6px;">Population</p>
+                <p class="hud-val">🦀 <span id="popDisplay">2</span> / <span id="maxPopDisplay">10</span></p>
+                <p class="hud-label" style="margin-top:6px;">Multiplier</p>
+                <p class="hud-gold">✕ <span id="multiplierDisplay">1.0</span></p>
+                <p class="hud-label" style="margin-top:6px;">Golden Barnacles</p>
+                <p class="hud-gold">🪙 <span id="barnacleDisplay">0</span></p>
+                <div id="abyssalRow" style="display:none; margin-top:6px;">
+                    <p class="hud-label">Abyssal Pearls</p>
+                    <p style="color:#00ffcc; font-weight:bold; margin:3px 0; font-size:13px;">🦪 <span id="abyssalDisplay">0</span></p>
+                </div>
+                <div id="achieveRow" style="display:none; margin-top:6px;">
+                    <p class="hud-label">Achievement Bonus</p>
+                    <p style="color:#00ff88; font-weight:bold; margin:3px 0; font-size:12px;">+<span id="achieveBonusDisplay">0</span>%</p>
+                </div>
+            </div>
+
+            <!-- Main game canvas -->
+            <canvas id="gameCanvas"></canvas>
+
+            <!-- Notifications -->
+            <div id="achievementNotif" class="game-notif"></div>
+            <div id="threatNotif" class="game-notif"></div>
         </div>
 
-        <div id="crabKey"></div>
+        <!-- RIGHT PANEL (market) -->
+        <div id="rightPanel">
+            <button class="panel-toggle" id="toggleRight" title="Collapse market">▶</button>
+            <div id="rightPanelInner">
+                <div id="marketSidebar"></div>
+                <div id="crabKey"></div>
+            </div>
+        </div>
 
-        <canvas id="gameCanvas"></canvas>
-        
     </div>
-    
+
+    <!-- ==================== BREAKING NEWS BANNER ==================== -->
+    <div id="breakingNews">
+        <div class="bn-bar">
+            <div class="bn-logo-block">
+                <span class="bn-logo">📡</span>
+                <span class="bn-station">Crabphony Ch. 5</span>
+            </div>
+            <div class="bn-badge">BREAKING NEWS</div>
+            <div class="bn-divider"></div>
+            <div id="bnHeadline" class="bn-headline">Markets are shifting...</div>
+            <div id="bnMarketNote" class="bn-market-note"></div>
+        </div>
+    </div>
+
     <script src="game.js"></script>
 </body>
 </html>
