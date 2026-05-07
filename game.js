@@ -56,7 +56,7 @@ const crabKeyContainer  = document.getElementById('crabKey');
 //  Each crab is drawn purely with canvas 2D — no image files
 // ============================================================
 
-function drawCrabOnCanvas(targetCtx, cx, cy, size, color, isFed, facingLeft, rainbowHue) {
+function drawCrabOnCanvas(targetCtx, cx, cy, size, color, isFed, facingLeft, rainbowHue, wobble) {
     const s = size;
     const actualColor = rainbowHue !== undefined
         ? `hsl(${rainbowHue}, 100%, 55%)`
@@ -80,7 +80,7 @@ function drawCrabOnCanvas(targetCtx, cx, cy, size, color, isFed, facingLeft, rai
     targetCtx.restore();
 
     // 4 pairs of walking legs behind body
-    drawWalkingLegs(targetCtx, s, actualColor, dark);
+    drawWalkingLegs(targetCtx, s, actualColor, dark, wobble || 0);
 
     // Carapace outline (slightly expanded for border)
     targetCtx.save();
@@ -225,8 +225,8 @@ function drawCarapacePath(ctx, s, expand) {
     ctx.closePath();
 }
 
-// 4 pairs of jointed walking legs extending from the carapace sides
-function drawWalkingLegs(ctx, s, color, dark) {
+// 4 pairs of jointed walking legs with animated gait cycle
+function drawWalkingLegs(ctx, s, color, dark, wobble) {
     const pairs = [
         { ay: -s * 0.16, ax: s * 0.55, mx: s * 0.88, my: -s * 0.24, ex: s * 0.78, ey: s * 0.06 },
         { ay:  s * 0.0,  ax: s * 0.59, mx: s * 0.92, my: -s * 0.1,  ex: s * 0.88, ey: s * 0.28 },
@@ -234,8 +234,18 @@ function drawWalkingLegs(ctx, s, color, dark) {
         { ay:  s * 0.28, ax: s * 0.48, mx: s * 0.76, my:  s * 0.2,  ex: s * 0.68, ey: s * 0.54 },
     ];
 
-    for (const { ay, ax, mx, my, ex, ey } of pairs) {
+    for (let pi = 0; pi < pairs.length; pi++) {
+        const { ay, ax, mx, my, ex, ey } = pairs[pi];
+        // Each pair alternates phase by 90° for a natural alternating gait
+        const phase  = wobble * 2.5 + pi * (Math.PI / 2);
+        const swing  = Math.sin(phase) * s * 0.07;
+
         for (const side of [-1, 1]) {
+            const animMx = mx + Math.abs(swing) * 0.4;
+            const animMy = my - Math.abs(swing) * 0.2;
+            const animEx = ex + swing * 0.5 * side;
+            const animEy = ey - swing * 0.35;
+
             // Black outline
             ctx.strokeStyle = '#000';
             ctx.lineWidth = s * 0.072;
@@ -243,25 +253,25 @@ function drawWalkingLegs(ctx, s, color, dark) {
             ctx.lineJoin = 'round';
             ctx.beginPath();
             ctx.moveTo(side * ax, ay);
-            ctx.lineTo(side * mx, my);
-            ctx.lineTo(side * ex, ey);
+            ctx.lineTo(side * animMx, animMy);
+            ctx.lineTo(side * animEx, animEy);
             ctx.stroke();
             // Colour fill
             ctx.strokeStyle = dark;
             ctx.lineWidth = s * 0.05;
             ctx.beginPath();
             ctx.moveTo(side * ax, ay);
-            ctx.lineTo(side * mx, my);
-            ctx.lineTo(side * ex, ey);
+            ctx.lineTo(side * animMx, animMy);
+            ctx.lineTo(side * animEx, animEy);
             ctx.stroke();
             // Joint dot
             ctx.fillStyle = '#000';
             ctx.beginPath();
-            ctx.arc(side * mx, my, s * 0.042, 0, Math.PI * 2);
+            ctx.arc(side * animMx, animMy, s * 0.042, 0, Math.PI * 2);
             ctx.fill();
             ctx.fillStyle = color;
             ctx.beginPath();
-            ctx.arc(side * mx, my, s * 0.028, 0, Math.PI * 2);
+            ctx.arc(side * animMx, animMy, s * 0.028, 0, Math.PI * 2);
             ctx.fill();
         }
     }
@@ -362,16 +372,18 @@ function drawClaw(targetCtx, s, side, color, dark, light, shine, holdingFood) {
 }
 
 function shadedColor(hex, amount) {
-    // Works with hex or hsl string
-    if (hex.startsWith('hsl')) {
-        // Parse hsl and shift lightness
-        const m = hex.match(/hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/);
-        if (m) return `hsl(${m[1]}, ${m[2]}%, ${Math.max(0, Math.min(100, parseFloat(m[3]) + amount))}%)`;
-        return hex;
+    // Works with hex or hsl string; safely returns fallback for named/special colors
+    if (!hex || !hex.startsWith('#')) {
+        if (hex && hex.startsWith('hsl')) {
+            const m = hex.match(/hsl\((\d+),\s*([\d.]+)%,\s*([\d.]+)%\)/);
+            if (m) return `hsl(${m[1]}, ${m[2]}%, ${Math.max(0, Math.min(100, parseFloat(m[3]) + amount))}%)`;
+        }
+        return hex || '#888888';
     }
     let r = parseInt(hex.slice(1, 3), 16);
     let g = parseInt(hex.slice(3, 5), 16);
     let b = parseInt(hex.slice(5, 7), 16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return hex;
     r = Math.max(0, Math.min(255, r + amount));
     g = Math.max(0, Math.min(255, g + amount));
     b = Math.max(0, Math.min(255, b + amount));
@@ -383,17 +395,28 @@ function shadedColor(hex, amount) {
 // ============================================================
 
 const CRAB_TIERS = {
-    '#ff4d4d': { name: 'Red',     next: '#4da6ff', prev: null,      value: 0.2,      baseMutate: 1.0,    maxAge: 18000 },
-    '#4da6ff': { name: 'Blue',    next: '#4dff4d', prev: '#ff4d4d', value: 1.0,      baseMutate: 0.15,   maxAge: 15000 },
-    '#4dff4d': { name: 'Green',   next: '#ff66b3', prev: '#4da6ff', value: 5.0,      baseMutate: 0.10,   maxAge: 12000 },
-    '#ff66b3': { name: 'Pink',    next: '#ff9900', prev: '#4dff4d', value: 25.0,     baseMutate: 0.06,   maxAge: 10000 },
-    '#ff9900': { name: 'Orange',  next: '#9933ff', prev: '#ff66b3', value: 125.0,    baseMutate: 0.03,   maxAge: 8500  },
-    '#9933ff': { name: 'Purple',  next: '#ffff66', prev: '#ff9900', value: 625.0,    baseMutate: 0.015,  maxAge: 7000  },
-    '#ffff66': { name: 'Yellow',  next: '#ffffff', prev: '#9933ff', value: 3125.0,   baseMutate: 0.008,  maxAge: 5500  },
-    '#ffffff': { name: 'White',   next: '#00ffff', prev: '#ffff66', value: 15625.0,  baseMutate: 0.005,  maxAge: 4500  },
-    '#00ffff': { name: 'Cyan',    next: 'rainbow', prev: '#ffffff', value: 78125.0,  baseMutate: 0.0035, maxAge: 3600  },
-    'rainbow': { name: 'Rainbow', next: null,      prev: '#00ffff', value: 390625.0, baseMutate: 0.0026, maxAge: 2700  }
+    // ── Mortal tiers (3× longer lifespan for AFK friendliness) ───────────────
+    '#ff4d4d': { name: 'Red',     next: '#4da6ff', prev: null,      value: 0.2,           baseMutate: 1.00,  maxAge: 54000  },
+    '#4da6ff': { name: 'Blue',    next: '#4dff4d', prev: '#ff4d4d', value: 1.0,           baseMutate: 0.20,  maxAge: 48000  },
+    '#4dff4d': { name: 'Green',   next: '#ff66b3', prev: '#4da6ff', value: 5.0,           baseMutate: 0.15,  maxAge: 42000  },
+    '#ff66b3': { name: 'Pink',    next: '#ff9900', prev: '#4dff4d', value: 25.0,          baseMutate: 0.11,  maxAge: 36000  },
+    '#ff9900': { name: 'Orange',  next: '#9933ff', prev: '#ff66b3', value: 125.0,         baseMutate: 0.08,  maxAge: 30000  },
+    '#9933ff': { name: 'Purple',  next: '#ffff66', prev: '#ff9900', value: 625.0,         baseMutate: 0.055, maxAge: 25000  },
+    '#ffff66': { name: 'Yellow',  next: '#ffffff', prev: '#9933ff', value: 3125.0,        baseMutate: 0.038, maxAge: 21000  },
+    '#ffffff': { name: 'White',   next: '#00ffff', prev: '#ffff66', value: 15625.0,       baseMutate: 0.025, maxAge: 16000  },
+    '#00ffff': { name: 'Cyan',    next: 'rainbow', prev: '#ffffff', value: 78125.0,       baseMutate: 0.016, maxAge: 12000  },
+    'rainbow': { name: 'Rainbow', next: '#ffd700', prev: '#00ffff', value: 390625.0,      baseMutate: 0.011, maxAge: 8000   },
+    '#ffd700': { name: 'Gilded',  next: '#00cc77', prev: 'rainbow', value: 2000000.0,     baseMutate: 0.007, maxAge: 6500   },
+    // ── Immortal top 3 (infinite health, always) ──────────────────────────────
+    '#00cc77': { name: 'Jade',    next: '#cc0033', prev: '#ffd700', value: 12000000.0,    baseMutate: 0.005, maxAge: Infinity },
+    '#cc0033': { name: 'Crimson', next: '#6600ff', prev: '#00cc77', value: 75000000.0,    baseMutate: 0.003, maxAge: Infinity },
+    '#6600ff': { name: 'Void',    next: 'cosmic',  prev: '#cc0033', value: 450000000.0,   baseMutate: 0.002, maxAge: Infinity },
+    'cosmic':  { name: 'Cosmic',  next: null,      prev: '#6600ff', value: 2500000000.0,  baseMutate: 0.001, maxAge: Infinity },
 };
+
+
+// Top 3 tiers are fully immortal (immune to age, disease, predators)
+const IMMORTAL_TIERS = new Set(['#cc0033', '#6600ff', 'cosmic']);
 
 // ============================================================
 //  STOCK MARKET SYSTEM
@@ -449,6 +472,31 @@ const MARKET_EVENTS = {
         { name: '🌈 Prismatic Singularity', desc: 'Reality fractures — Rainbow crabs ascend!', effect: 8.0, duration: 10 },
         { name: '🔄 Spectrum Collapse', desc: 'Chromatic instability halts Rainbow output.', effect: 0.12, duration: 15 },
         { name: '🎇 Quantum Bloom', desc: 'Quantum coherence achieved — Rainbow transcends.', effect: 6.0, duration: 8 },
+    ],
+    '#ffd700': [
+        { name: '🪙 Gilded Rush', desc: 'Treasure hunters flood the market — Gilded crabs soar!', effect: 7.0, duration: 10 },
+        { name: '📉 Gold Crash', desc: 'Gilded bubble pops — prices collapse overnight.', effect: 0.10, duration: 14 },
+        { name: '⭐ Alchemy Event', desc: 'Ancient alchemy ritual transmutes base metals to gold.', effect: 5.5, duration: 8 },
+    ],
+    '#00cc77': [
+        { name: '🌿 Jade Surge', desc: 'Jade crabs emerge from deep forest currents!', effect: 7.5, duration: 9 },
+        { name: '🍄 Blight', desc: 'Fungal blight silences Jade crab productivity.', effect: 0.09, duration: 12 },
+        { name: '💎 Gemstone Vein', desc: 'Rare jade crystal seams discovered — prices explode.', effect: 6.0, duration: 7 },
+    ],
+    '#cc0033': [
+        { name: '🩸 Blood Moon', desc: 'Crimson crabs awaken under the blood moon!', effect: 9.0, duration: 8 },
+        { name: '🪦 Cursed Waters', desc: 'Ancient curse halts Crimson crab output.', effect: 0.08, duration: 10 },
+        { name: '⚔️ Crimson War', desc: 'Scarcity wars drive Crimson crab values sky-high.', effect: 7.0, duration: 6 },
+    ],
+    '#6600ff': [
+        { name: '🌀 Void Storm', desc: 'A dimensional storm supercharges Void crabs!', effect: 10.0, duration: 7 },
+        { name: '🌑 Event Horizon', desc: 'Void collapse — all output sucked into oblivion.', effect: 0.07, duration: 10 },
+        { name: '⚫ Singularity', desc: 'Gravitational singularity concentrates Void energy.', effect: 8.0, duration: 5 },
+    ],
+    'cosmic': [
+        { name: '🌌 Cosmic Awakening', desc: 'The cosmos aligns — Cosmic crabs transcend reality!', effect: 12.0, duration: 6 },
+        { name: '🕳️ Heat Death', desc: 'Entropic collapse — Cosmic crabs go silent.', effect: 0.05, duration: 8 },
+        { name: '🌠 Supernova', desc: 'Stellar explosion births infinite Cosmic crab energy.', effect: 10.0, duration: 4 },
     ],
 };
 
@@ -582,13 +630,118 @@ class CrabMarket {
     }
 }
 
-const market = new CrabMarket();
+let market = new CrabMarket();
 
 // Market ticks every 3 seconds
 let marketTickInterval = null;
 
 function startMarket() {
+    if (marketTickInterval) clearInterval(marketTickInterval);
     marketTickInterval = setInterval(() => market.tick(), 3000);
+}
+
+// ============================================================
+//  AUDIO ENGINE  (Web Audio API — no external files)
+// ============================================================
+const AudioEngine = (() => {
+    let ctx = null;
+
+    function init() {
+        if (ctx) return;
+        try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+
+    function tone(freq, type, duration, vol, delay = 0) {
+        if (!ctx) return;
+        try {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+            gain.gain.setValueAtTime(0.001, ctx.currentTime + delay);
+            gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + delay + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+            osc.start(ctx.currentTime + delay);
+            osc.stop(ctx.currentTime + delay + duration + 0.05);
+        } catch(e) {}
+    }
+
+    const sounds = {
+        foodDrop:    () => { tone(700,'sine',0.07,0.12); tone(500,'sine',0.08,0.07,0.06); },
+        breed:       () => { tone(440,'sine',0.1,0.18); tone(554,'sine',0.1,0.18,0.07); tone(659,'sine',0.12,0.14,0.14); },
+        rareBreed:   () => { [523,659,784,1047].forEach((f,i) => tone(f,'sine',0.22,0.2,i*0.07)); },
+        death:       () => { tone(200,'sawtooth',0.18,0.14); tone(140,'sawtooth',0.22,0.09,0.1); },
+        harvest:     () => { tone(880,'sine',0.05,0.18); tone(1100,'sine',0.07,0.14,0.05); tone(1320,'sine',0.08,0.1,0.1); },
+        prestige:    () => { [262,330,392,523,659,784].forEach((f,i) => tone(f,'sine',0.3,0.18,i*0.09)); tone(1047,'sine',0.55,0.22,0.6); },
+        achievement: () => { tone(784,'sine',0.1,0.18); tone(1047,'sine',0.14,0.18,0.09); },
+        marketBull:  () => { tone(440,'sine',0.09,0.1); tone(554,'sine',0.09,0.1,0.07); tone(659,'sine',0.12,0.09,0.14); },
+        marketBear:  () => { tone(440,'sawtooth',0.09,0.1); tone(330,'sawtooth',0.13,0.09,0.07); },
+        predator:    () => { tone(130,'sawtooth',0.25,0.18); tone(100,'sawtooth',0.3,0.12,0.12); },
+        flashSell:   () => { tone(1100,'sine',0.05,0.18); tone(1320,'sine',0.05,0.18,0.04); tone(1760,'sine',0.1,0.14,0.08); },
+    };
+
+    function play(type) {
+        try {
+            init();
+            if (ctx && ctx.state === 'suspended') ctx.resume();
+            if (sounds[type]) sounds[type]();
+        } catch(e) {}
+    }
+
+    return { play, init };
+})();
+
+// ============================================================
+//  PARTICLE SYSTEM
+// ============================================================
+let particles = [];
+
+class Particle {
+    constructor(x, y, color, vx, vy, size, maxLife) {
+        this.x = x; this.y = y;
+        this.color = color;
+        this.vx = vx; this.vy = vy;
+        this.size = size;
+        this.life = 0;
+        this.maxLife = maxLife;
+    }
+    update() {
+        this.x  += this.vx;
+        this.y  += this.vy;
+        this.vy += 0.1;
+        this.vx *= 0.97;
+        this.life++;
+        return this.life < this.maxLife;
+    }
+    draw(ctx) {
+        const alpha = 1 - (this.life / this.maxLife);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle   = this.color;
+        ctx.shadowBlur  = 8;
+        ctx.shadowColor = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, Math.max(0.5, this.size * (1 - this.life / this.maxLife * 0.5)), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+function spawnParticles(x, y, color, count, big = false) {
+    for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+        const speed = (big ? 3 : 1.5) + Math.random() * (big ? 4 : 2.5);
+        const c     = color === 'rainbow' ? `hsl(${Math.random()*360},100%,60%)` : color;
+        particles.push(new Particle(
+            x, y, c,
+            Math.cos(angle) * speed,
+            Math.sin(angle) * speed - (big ? 2 : 1),
+            big ? (2 + Math.random() * 3) : (1 + Math.random() * 2),
+            big ? (55 + Math.random() * 25) : (30 + Math.random() * 20)
+        ));
+    }
 }
 
 // ============================================================
@@ -625,13 +778,14 @@ function renderMarketUI() {
         const change = market.getPriceChange(h);
         const changeStr = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
         const changeColor = change > 1 ? '#00ff88' : change < -1 ? '#ff4455' : '#ffcc00';
-        const displayColor = h === 'rainbow' ? '#ffcc00' : h;
+        const displayColor = h === 'rainbow' ? '#ffcc00' : h === 'cosmic' ? '#cc88ff' : h;
         const activeEvent = market.activeEvents[h];
 
         const row = document.createElement('div');
         row.className = 'mkt-row';
 
-        const sparkId = `spark-${h.replace('#', '')}`;
+        const sparkId    = `spark-${h.replace('#', '')}`;
+        const isBullEvent = activeEvent && activeEvent.event.effect > 1;
         row.innerHTML = `
             <span class="mkt-name" style="color:${displayColor};">${name}</span>
             <canvas id="${sparkId}" class="mkt-chart" width="55" height="18"></canvas>
@@ -639,6 +793,26 @@ function renderMarketUI() {
             <span class="mkt-change" style="color:${changeColor};">${changeStr}</span>
             ${activeEvent ? `<span class="mkt-event-badge">${activeEvent.event.name.split(' ')[0]}</span>` : ''}
         `;
+        // Flash Sell button for bull events
+        if (isBullEvent) {
+            const fsBtn = document.createElement('button');
+            fsBtn.textContent = '⚡ SELL';
+            fsBtn.style.cssText = `display:block; width:100%; margin-top:3px; padding:4px 6px; font-size:9px; font-weight:bold; font-family:inherit; background:rgba(255,204,0,0.15); border:1px solid #ffcc00; color:#ffcc00; border-radius:3px; cursor:pointer; letter-spacing:1px; transition:background 0.15s;`;
+            fsBtn.onmouseover = () => { fsBtn.style.background = '#ffcc00'; fsBtn.style.color = '#000'; };
+            fsBtn.onmouseout  = () => { fsBtn.style.background = 'rgba(255,204,0,0.15)'; fsBtn.style.color = '#ffcc00'; };
+            fsBtn.addEventListener('click', () => {
+                const pool = crabs.filter(c => c.color === h);
+                if (pool.length === 0) { showThreat(`No ${name} crabs to sell!`, '#ffcc00'); return; }
+                const insiderBonus = 1 + upgrades.marketInsider.level * 0.25;
+                const bonus = 2.0; // Flash sell bonus multiplier
+                score += pool.length * price * 10 * globalMultiplier * insiderBonus * bonus;
+                crabs = crabs.filter(c => c.color !== h);
+                AudioEngine.play('flashSell');
+                showBreakingNews(`⚡ FLASH SELL: ${pool.length} ${name} crabs liquidated at ${(bonus*100).toFixed(0)}% market rate!`, `📈 ${name} +${((activeEvent.event.effect-1)*100).toFixed(0)}%`, h);
+                saveGame();
+            });
+            row.appendChild(fsBtn);
+        }
         grid.appendChild(row);
 
         const sparkCanvas = row.querySelector(`#${sparkId}`);
@@ -770,6 +944,7 @@ function showAchievement(ach) {
         <div style="font-size:10px;color:#aaa;margin-top:2px;">${ach.desc}</div>
         <div style="font-size:10px;color:#00ff88;margin-top:4px;">+${(ach.bonus*100).toFixed(0)}% permanent income</div>`;
     el.style.display = 'block';
+    AudioEngine.play('achievement');
     clearTimeout(_achTimeout);
     _achTimeout = setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
@@ -792,14 +967,16 @@ function showBreakingNews(headline, marketNote, crabColor) {
     const hl = document.getElementById('bnHeadline');
     const mn = document.getElementById('bnMarketNote');
     if (!el || !hl) return;
-    const displayColor = crabColor === 'rainbow' ? '#ffcc00' : (crabColor || '#fff');
+    const displayColor = crabColor === 'rainbow' ? '#ffcc00' : crabColor === 'cosmic' ? '#cc88ff' : (crabColor || '#fff');
     hl.innerHTML = `<span style="color:${displayColor}; margin-right:8px;">●</span>${headline}`;
     if (mn) {
         mn.textContent = marketNote || '';
-        mn.style.color = (marketNote && marketNote.includes('📈')) ? '#00ff88' : '#ff4455';
+        const isBull = marketNote && marketNote.includes('📈');
+        mn.style.color = isBull ? '#00ff88' : '#ff4455';
+        AudioEngine.play(isBull ? 'marketBull' : 'marketBear');
     }
     el.classList.remove('show');
-    void el.offsetWidth; // force reflow to restart animation
+    void el.offsetWidth;
     el.classList.add('show');
     clearTimeout(_bnTimeout);
     _bnTimeout = setTimeout(() => { el.classList.remove('show'); }, 9000);
@@ -842,22 +1019,23 @@ function getHighestOwnedTier() {
     crabs[0].color);
 }
 
-// Returns true if killing/infecting this crab would rob the player of their last
-// specimen of their highest-owned tier, OR if it is a rainbow crab
+// Returns true if this crab is fully protected from death, disease, and predators.
+// Rule: IMMORTAL_TIERS + rainbow are always immortal.
+//       ALL crabs of the player's current highest-owned tier are also protected
+//       so AFK players never lose their best progress.
 function isProtected(crab) {
-    if (crab.color === 'rainbow') return true;
+    if (IMMORTAL_TIERS.has(crab.color) || crab.color === 'rainbow') return true;
     const highest = getHighestOwnedTier();
-    if (crab.color !== highest) return false;
-    return crabs.filter(c => c.color === highest && !c.dead).length <= 1;
+    return crab.color === highest; // every crab of the top tier is safe
 }
 
 // ============================================================
 //  THREAT SYSTEM
 // ============================================================
 function checkThreats() {
-    // --- Predator events (base ~5 min; halved by guard upgrades) ---
+    // --- Predator events (base 15 min; reduced to ~8 min with max guard) ---
     predatorTimer++;
-    const predInterval = Math.max(7200, 18000 - upgrades.predatorGuard.level * 2700);
+    const predInterval = Math.max(28800, 54000 - upgrades.predatorGuard.level * 6300);
     if (predatorTimer >= predInterval && crabs.length > 0) {
         predatorTimer = 0;
         const deflect = [0, 0.33, 0.60, 0.80, 0.95][upgrades.predatorGuard.level] || 0;
@@ -875,17 +1053,18 @@ function checkThreats() {
                     const target = eligible[Math.floor(Math.random() * eligible.length)];
                     const idx = crabs.indexOf(target);
                     if (idx !== -1) crabs.splice(idx, 1);
+                    AudioEngine.play('predator');
                     showThreat(`🦈 Predator strike! Lost a ${CRAB_TIERS[target.color]?.name || ''} crab!`);
                 }
             }
         }
     }
 
-    // --- Disease events (base ~5 min, 20% chance) ---
+    // --- Disease events (base ~20 min, 12% chance, only hits unprotected crabs) ---
     diseaseTimer++;
-    if (diseaseTimer >= 18000 && crabs.length > 0) {
+    if (diseaseTimer >= 72000 && crabs.length > 0) {
         diseaseTimer = 0;
-        if (Math.random() < 0.20) {
+        if (Math.random() < 0.12) {
             const eligible = crabs.filter(c => !c.infected && !isProtected(c));
             if (eligible.length > 0) {
                 const target = eligible[Math.floor(Math.random() * eligible.length)];
@@ -971,34 +1150,28 @@ class Crab {
     }
 
     update() {
-        // Rainbow crabs: immortal, immune to all threats
-        const isRainbow = this.color === 'rainbow';
+        // Determine immortality: hardcoded immortal tiers, rainbow, AND the
+        // player's current highest-owned tier are all fully immortal.
+        const highestTier = getHighestOwnedTier();
+        const isImmortal  = IMMORTAL_TIERS.has(this.color)
+                          || this.color === 'rainbow'
+                          || this.color === highestTier;
 
-        // Aging — rainbow never ages out; last of highest tier is also protected
+        // Aging — immortal crabs never age out
         this.age++;
-        if (!isRainbow && this.age >= this.maxAge) {
-            if (isProtected(this)) {
-                this.age = Math.floor(this.maxAge * 0.85); // reset age so they keep living
-            } else {
-                this.dead = true; return;
-            }
+        if (!isImmortal && this.age >= this.maxAge) {
+            this.dead = true; return;
         }
 
-        // Disease — rainbow crabs instantly clear infection
-        if (isRainbow && this.infected) {
+        // Disease — immortal crabs instantly clear infection
+        if (isImmortal && this.infected) {
             this.infected = false;
             this.infectedAge = 0;
         }
         if (this.infected) {
             this.infectedAge++;
-            if (this.infectedAge >= 600) {
-                if (isProtected(this)) {
-                    // Protected: survive but recover slowly
-                    this.infected = false;
-                    this.infectedAge = 0;
-                } else {
-                    this.dead = true; return;
-                }
+            if (this.infectedAge >= 1800) { // 30 sec to die (was 10 sec)
+                this.dead = true; return;
             }
             const spreadChance = 0.002 * Math.max(0.1, 1 - upgrades.filtration.level * 0.18);
             for (const other of crabs) {
@@ -1060,23 +1233,35 @@ class Crab {
             if (Math.random() < chance) baby = data.next;
             else baby = (Math.random() < 0.6) ? base : (data.prev || '#ff4d4d');
         }
+        const tierIdx = getTierIndex(baby);
+        const isRare  = tierIdx >= 3; // Pink or higher
+        spawnParticles(this.x, this.y, baby, isRare ? 18 : 8, isRare);
+        AudioEngine.play(isRare ? 'rareBreed' : 'breed');
         crabs.push(new Crab(this.x, this.y, baby));
     }
 
     draw(ctx) {
+        // Special hue-shifting renders for animated tiers
+        const t = Date.now();
         const rainbowHue = this.color === 'rainbow'
-            ? (Date.now() / 5 + this.wobble * 20) % 360
+            ? (t / 5  + this.wobble * 20) % 360
+            : this.color === 'cosmic'
+            ? (360 - (t / 3 + this.wobble * 30) % 360)
             : undefined;
         const legOffset = Math.sin(this.wobble) * 2;
 
-        // Fade when close to death (last 20% of life)
-        const deathFraction = this.age / this.maxAge;
+        // Immortal crabs (hardcoded tiers, rainbow, and current highest tier) never fade
+        const highestTier = getHighestOwnedTier();
+        const isImmortal  = IMMORTAL_TIERS.has(this.color)
+                          || this.color === 'rainbow'
+                          || this.color === highestTier;
+        const deathFraction = isImmortal ? 0 : this.age / this.maxAge;
         if (deathFraction > 0.8) {
             ctx.save();
             ctx.globalAlpha = 1 - ((deathFraction - 0.8) / 0.2) * 0.55;
         }
 
-        drawCrabOnCanvas(ctx, this.x, this.y + legOffset, this.size, this.color, this.isFed, this.vx < 0, rainbowHue);
+        drawCrabOnCanvas(ctx, this.x, this.y + legOffset, this.size, this.color, this.isFed, this.vx < 0, rainbowHue, this.wobble);
 
         if (deathFraction > 0.8) ctx.restore();
 
@@ -1150,18 +1335,23 @@ function updateUI() {
     if (pcDisp) pcDisp.innerText = prestigeCount;
 
     if (abyssalPearls > 0) {
-        document.getElementById('abyssalRow').style.display = 'block';
-        document.getElementById('abyssalDisplay').innerText = abyssalPearls;
+        const _abEl = document.getElementById('abyssalRow');
+        const _adEl = document.getElementById('abyssalDisplay');
+        if (_abEl) _abEl.style.display = 'block';
+        if (_adEl) _adEl.innerText = abyssalPearls;
     }
     const bonus = getAchievementBonus();
     if (bonus > 0) {
-        document.getElementById('achieveRow').style.display = 'block';
-        document.getElementById('achieveBonusDisplay').innerText = (bonus * 100).toFixed(0);
+        const _arEl  = document.getElementById('achieveRow');
+        const _abDEl = document.getElementById('achieveBonusDisplay');
+        if (_arEl)  _arEl.style.display = 'block';
+        if (_abDEl) _abDEl.innerText = (bonus * 100).toFixed(0);
     }
 
     // Existing upgrade displays
     spanCostCapacity.innerText = getCost('tankCapacity');
-    document.getElementById('lvlCapacity').innerText = `Lv ${upgrades.tankCapacity.level}`;
+    const _lvlCapEl = document.getElementById('lvlCapacity');
+    if (_lvlCapEl) _lvlCapEl.innerText = `Lv ${upgrades.tankCapacity.level}`;
     spanCostBlueCrab.innerText = getCost('blueCrabsBought');
     spanLvlFeeder.innerText    = upgrades.autoFeeder.level;
     spanCostFeeder.innerText   = (10000 - upgrades.autoFeeder.level * 1000 <= 1500) ? 'MAX' : getCost('autoFeeder');
@@ -1202,7 +1392,9 @@ function updateUI() {
 
     // Button states
     const maxPop = 10 + upgrades.tankCapacity.level * 5;
-    btnHarvest.disabled        = count === 0;
+    const harvestEnabled = count > 0;
+    btnHarvest.disabled        = !harvestEnabled;
+    if (btnHarvestHalf) btnHarvestHalf.disabled = !harvestEnabled;
     btnBuyCapacity.disabled    = score < getCost('tankCapacity');
     btnBuyBlueCrab.disabled    = score < getCost('blueCrabsBought') || crabs.length >= maxPop;
     btnBuyAutoFeeder.disabled  = score < getCost('autoFeeder') || (10000 - upgrades.autoFeeder.level * 1000 <= 1500);
@@ -1223,6 +1415,18 @@ function updateUI() {
         btnPrestige2.disabled = score < 10000000;
     }
 
+    // Prestige progress bar
+    const barFill  = document.getElementById('prestigeBarFill');
+    const barLabel = document.getElementById('prestigeBarLabel');
+    if (barFill && barLabel) {
+        const target = prestigeCount >= 3 ? 10000000 : 100000;
+        const pct    = Math.min(100, (score / target) * 100);
+        barFill.style.width = pct.toFixed(1) + '%';
+        const scoreStr = score >= 1e6 ? (score/1e6).toFixed(1)+'M' : score >= 1000 ? (score/1000).toFixed(1)+'K' : Math.floor(score);
+        const targetStr = target >= 1e6 ? (target/1e6).toFixed(0)+'M' : (target/1000).toFixed(0)+'K';
+        barLabel.textContent = `${scoreStr} / ${targetStr}`;
+    }
+
     renderLegend();
 }
 
@@ -1239,7 +1443,10 @@ function renderLegend() {
         crabKeyContainer.appendChild(header);
 
         for (let h in CRAB_TIERS) {
-            const displayColor = h === 'rainbow' ? '#ffcc00' : h;
+            // 'rainbow' and 'cosmic' are not valid CSS colors — map to a visible display color
+            const displayColor = h === 'rainbow' ? '#ffcc00'
+                               : h === 'cosmic'  ? '#cc88ff'
+                               : h;
             const rarityText = h === '#ff4d4d'
                 ? 'Base'
                 : (CRAB_TIERS[h].baseMutate * (1 + upgrades.mutationLab.level * 0.1) * (1 + upgrades.mutationBoost.level * 0.5) * 100).toFixed(2) + '%';
@@ -1248,17 +1455,33 @@ function renderLegend() {
             item.className = 'key-item';
             item.id = `legend-${h.replace('#', '')}`;
 
+            // Canvas icon — created first and appended via DOM (not innerHTML) to preserve it
             const iconCanvas = document.createElement('canvas');
             iconCanvas.width  = 34;
             iconCanvas.height = 28;
             iconCanvas.className = 'key-crab-canvas';
-
             item.appendChild(iconCanvas);
-            item.innerHTML += `
-                <span class="key-name" style="color:${displayColor};">${CRAB_TIERS[h].name}</span>
-                <span class="key-count" id="legend-count-${h.replace('#','')}" style="color:${displayColor};">0</span>
-                <span class="rarity-val" id="legend-rarity-${h.replace('#','')}">${rarityText}</span>
-            `;
+
+            // Text spans via DOM to avoid innerHTML clobbering the canvas
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'key-name';
+            nameSpan.style.color = displayColor;
+            nameSpan.textContent = CRAB_TIERS[h].name;
+            item.appendChild(nameSpan);
+
+            const countSpan = document.createElement('span');
+            countSpan.className = 'key-count';
+            countSpan.id = `legend-count-${h.replace('#','')}`;
+            countSpan.style.color = displayColor;
+            countSpan.textContent = '0';
+            item.appendChild(countSpan);
+
+            const raritySpan = document.createElement('span');
+            raritySpan.className = 'rarity-val';
+            raritySpan.id = `legend-rarity-${h.replace('#','')}`;
+            raritySpan.textContent = rarityText;
+            item.appendChild(raritySpan);
+
             crabKeyContainer.appendChild(item);
         }
     }
@@ -1284,13 +1507,16 @@ function renderLegend() {
                 : (CRAB_TIERS[h].baseMutate * (1 + upgrades.mutationLab.level * 0.1) * (1 + upgrades.mutationBoost.level * 0.5) * 100).toFixed(2) + '%';
         }
 
-        // Draw mini crab
+        // Draw mini crab icon
         const iconCanvas = item.querySelector('canvas');
         if (!iconCanvas) continue;
         const iCtx = iconCanvas.getContext('2d');
         iCtx.clearRect(0, 0, iconCanvas.width, iconCanvas.height);
-        const rainbowHue = h === 'rainbow' ? (Date.now() / 5) % 360 : undefined;
-        drawCrabOnCanvas(iCtx, 17, 16, 10, h, false, false, rainbowHue);
+        const t = Date.now();
+        const legendHue = h === 'rainbow' ? (t / 5) % 360
+                        : h === 'cosmic'  ? (360 - (t / 3) % 360)
+                        : undefined;
+        drawCrabOnCanvas(iCtx, 17, 16, 10, h, false, false, legendHue);
     }
 }
 
@@ -1336,24 +1562,42 @@ btnBuyAutoFeeder.addEventListener('click', () => {
 const harvestCooldowns = {};
 const HARVEST_COOLDOWN_MS = 45000;
 
-btnHarvest.addEventListener('click', () => {
+function doHarvest(fraction) {
     const sel = harvestSelect.value;
     const now = Date.now();
-    const lastHarvest = harvestCooldowns[sel] || 0;
-    const elapsed = now - lastHarvest;
+    const elapsed = now - (harvestCooldowns[sel] || 0);
     if (elapsed < HARVEST_COOLDOWN_MS) {
         const remaining = Math.ceil((HARVEST_COOLDOWN_MS - elapsed) / 1000);
-        showThreat(`⏳ ${CRAB_TIERS[sel].name} crabs need ${remaining}s cooldown before next harvest!`, '#ffcc00');
+        showThreat(`⏳ ${CRAB_TIERS[sel].name} crabs need ${remaining}s cooldown!`, '#ffcc00');
+        return;
+    }
+    const keepOne = document.getElementById('chkKeepOne')?.checked;
+    let pool = crabs.filter(c => c.color === sel);
+    if (pool.length === 0) return;
+    // Keep 1 safe: always leave at least 1 behind
+    const keep = keepOne ? 1 : 0;
+    const total = pool.length;
+    const toHarvest = Math.max(0, Math.floor(total * fraction) - (fraction < 1 ? 0 : keep));
+    // For "half": harvest half, floor, but if keep-one and only 1, do nothing
+    const actualHarvest = keepOne ? Math.min(toHarvest, total - 1) : toHarvest;
+    if (actualHarvest <= 0) {
+        showThreat(`🛡️ Keep 1 Safe: no ${CRAB_TIERS[sel].name} crabs harvested.`, '#4da6ff');
         return;
     }
     const insiderBonus = 1 + upgrades.marketInsider.level * 0.25;
-    const harvested = crabs.filter(c => c.color === sel);
-    if (harvested.length === 0) return;
-    score += harvested.length * market.getPrice(sel) * 10 * globalMultiplier * insiderBonus;
-    crabs = crabs.filter(c => c.color !== sel);
+    const toRemove = pool.slice(0, actualHarvest);
+    score += toRemove.length * market.getPrice(sel) * 10 * globalMultiplier * insiderBonus;
+    const removeSet = new Set(toRemove);
+    crabs = crabs.filter(c => !removeSet.has(c));
     harvestCooldowns[sel] = now;
+    AudioEngine.play('harvest');
     saveGame();
-});
+}
+
+btnHarvest.addEventListener('click', () => doHarvest(1));
+
+const btnHarvestHalf = document.getElementById('btnHarvestHalf');
+if (btnHarvestHalf) btnHarvestHalf.addEventListener('click', () => doHarvest(0.5));
 
 btnHardReset.addEventListener('click', () => {
     if (confirm('Erase all data? This cannot be undone.')) {
@@ -1362,49 +1606,83 @@ btnHardReset.addEventListener('click', () => {
     }
 });
 
-// Panel collapse toggles
-document.getElementById('toggleLeft').addEventListener('click', () => {
-    const panel = document.getElementById('leftPanel');
-    const btn   = document.getElementById('toggleLeft');
-    panel.classList.toggle('collapsed');
-    btn.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
-});
+// Panel collapse toggles (guarded — not present on mobile)
+const _toggleLeftEl = document.getElementById('toggleLeft');
+if (_toggleLeftEl) {
+    _toggleLeftEl.addEventListener('click', () => {
+        const panel = document.getElementById('leftPanel');
+        const btn   = document.getElementById('toggleLeft');
+        panel.classList.toggle('collapsed');
+        btn.textContent = panel.classList.contains('collapsed') ? '▶' : '◀';
+    });
+}
 
-document.getElementById('toggleRight').addEventListener('click', () => {
-    const panel = document.getElementById('rightPanel');
-    const btn   = document.getElementById('toggleRight');
-    panel.classList.toggle('collapsed');
-    btn.textContent = panel.classList.contains('collapsed') ? '◀' : '▶';
-});
+const _toggleRightEl = document.getElementById('toggleRight');
+if (_toggleRightEl) {
+    _toggleRightEl.addEventListener('click', () => {
+        const panel = document.getElementById('rightPanel');
+        const btn   = document.getElementById('toggleRight');
+        panel.classList.toggle('collapsed');
+        btn.textContent = panel.classList.contains('collapsed') ? '◀' : '▶';
+    });
+}
 
-btnPrestige.addEventListener('click', () => {
-    if (score >= 100000) {
+// ============================================================
+//  PRESTIGE  (in-memory reset — no page reload)
+// ============================================================
+function resetForPrestige(type) {
+    if (type === 'carcinize') {
         goldenBarnacles += Math.floor(score / 100000);
         prestigeCount++;
         globalMultiplier = 1 + goldenBarnacles * 0.5 + abyssalPearls * 1.5;
-        score = 0; crabs = []; foods = [];
-        Object.keys(upgrades).forEach(k => upgrades[k].level = 0);
-        saveGame();
-        location.reload();
+    } else {
+        abyssalPearls++;
+        goldenBarnacles = 0;
+        prestigeCount   = 0;
+        globalMultiplier = 1 + abyssalPearls * 1.5;
     }
+    score = 0; crabs = []; foods = []; particles = [];
+    Object.keys(upgrades).forEach(k => upgrades[k].level = 0);
+    Object.keys(harvestCooldowns).forEach(k => delete harvestCooldowns[k]);
+    predatorTimer = 0; diseaseTimer = 0;
+    // Reset market
+    market = new CrabMarket();
+    if (marketTickInterval) { clearInterval(marketTickInterval); marketTickInterval = null; }
+    if (autoFeederInterval) { clearInterval(autoFeederInterval); autoFeederInterval = null; }
+    if (kelpFarmInterval)   { clearInterval(kelpFarmInterval);   kelpFarmInterval   = null; }
+    // Re-initialise crabs after one frame (canvas size may not be set yet)
+    requestAnimationFrame(() => {
+        crabs = [
+            new Crab(canvas.width / 3,       canvas.height / 2, '#ff4d4d'),
+            new Crab((canvas.width * 2) / 3, canvas.height / 2, '#ff4d4d'),
+        ];
+        startMarket();
+        updateFeederTimer();
+        updateKelpFarm();
+        injectMarketPanel();
+        renderMarketUI();
+        // Rebuild legend
+        const key = document.getElementById('crabKey');
+        if (key) key.innerHTML = '';
+        saveGame();
+        updateUI();
+    });
+    AudioEngine.play('prestige');
+    showBreakingNews('🌌 CARCINIZATION COMPLETE — A new cycle begins!', '⭐ Barnacle Earned', '#ffcc00');
+}
+
+btnPrestige.addEventListener('click', () => {
+    if (score >= 100000) resetForPrestige('carcinize');
 });
 
 btnPrestige2.addEventListener('click', () => {
-    if (prestigeCount >= 3 && score >= 10000000) {
-        abyssalPearls++;
-        goldenBarnacles = 0;
-        prestigeCount = 0;
-        globalMultiplier = 1 + abyssalPearls * 1.5;
-        score = 0; crabs = []; foods = [];
-        Object.keys(upgrades).forEach(k => upgrades[k].level = 0);
-        saveGame();
-        location.reload();
-    }
+    if (prestigeCount >= 3 && score >= 10000000) resetForPrestige('abyssal');
 });
 
 canvas.addEventListener('mousedown', (e) => {
     const r = canvas.getBoundingClientRect();
     foods.push(new Food(e.clientX - r.left, e.clientY - r.top));
+    AudioEngine.play('foodDrop');
 });
 
 menuBtns.howToPlay.addEventListener('click', () => { window.location.href = 'howtoplay.html'; });
@@ -1417,15 +1695,19 @@ for (let h in CRAB_TIERS) {
     let o = document.createElement('option');
     o.value = h;
     o.text  = CRAB_TIERS[h].name + ' Crab';
-    let textColor = h === 'rainbow' ? '#ffcc00' : h;
+    let textColor = h === 'rainbow' ? '#ffcc00' : h === 'cosmic' ? '#cc88ff' : h;
     o.style.color = textColor;
     o.style.fontWeight = 'bold';
     harvestSelect.appendChild(o);
 }
-harvestSelect.style.color = harvestSelect.value === 'rainbow' ? '#ffcc00' : harvestSelect.value;
+
+function getTierDisplayColor(val) {
+    return val === 'rainbow' ? '#ffcc00' : val === 'cosmic' ? '#cc88ff' : val;
+}
+harvestSelect.style.color = getTierDisplayColor(harvestSelect.value);
 harvestSelect.style.fontWeight = 'bold';
 harvestSelect.addEventListener('change', (e) => {
-    harvestSelect.style.color = e.target.value === 'rainbow' ? '#ffcc00' : e.target.value;
+    harvestSelect.style.color = getTierDisplayColor(e.target.value);
 });
 
 // ============================================================
@@ -1474,10 +1756,13 @@ window.onload = () => {
 };
 
 function launchEngine(isNewGame) {
+    stopLoop(); // Cancel any existing game loop before starting fresh
+
     uiScreens.menu.style.display = 'none';
     uiScreens.game.style.display = 'flex';
 
-    requestAnimationFrame(resizeCanvas);
+    // Resize canvas synchronously so crabs spawn at correct positions
+    resizeCanvas();
     setupResizeObserver();
 
     if (isNewGame || !savedData) {
@@ -1525,13 +1810,65 @@ function launchEngine(isNewGame) {
     const ticker = document.getElementById('newsTicker');
     if (ticker) ticker.style.display = 'flex';
 
+    // Tooltip system
+    const tooltip = document.getElementById('gameTooltip');
+    if (tooltip) {
+        document.querySelectorAll('[data-tooltip]').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                tooltip.textContent = el.dataset.tooltip;
+                tooltip.style.display = 'block';
+            });
+            el.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 16) + 'px';
+                tooltip.style.top  = (e.clientY - 8)  + 'px';
+            });
+            el.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+            });
+        });
+    }
+
     requestAnimationFrame(loop);
 }
 
+// ============================================================
+//  NEW GAME MODAL  (replaces native confirm())
+// ============================================================
+const newGameModal       = document.getElementById('newGameModal');
+const btnNewGameConfirm  = document.getElementById('btnNewGameConfirm');
+const btnNewGameCancel   = document.getElementById('btnNewGameCancel');
+
+function showNewGameModal() {
+    newGameModal.style.display = 'flex';
+}
+function hideNewGameModal() {
+    newGameModal.style.display = 'none';
+}
+
+// Hover effects on modal buttons
+if (btnNewGameConfirm) {
+    btnNewGameConfirm.onmouseover = () => { btnNewGameConfirm.style.background = '#ff4d4d'; btnNewGameConfirm.style.color = '#000'; };
+    btnNewGameConfirm.onmouseout  = () => { btnNewGameConfirm.style.background = 'rgba(255,77,77,0.15)'; btnNewGameConfirm.style.color = '#ff4d4d'; };
+    btnNewGameConfirm.addEventListener('click', () => {
+        hideNewGameModal();
+        localStorage.removeItem('crabphonySave');
+        savedData = null;
+        launchEngine(true);
+    });
+}
+if (btnNewGameCancel) {
+    btnNewGameCancel.onmouseover = () => { btnNewGameCancel.style.background = '#4da6ff'; btnNewGameCancel.style.color = '#000'; };
+    btnNewGameCancel.onmouseout  = () => { btnNewGameCancel.style.background = 'rgba(77,166,255,0.1)'; btnNewGameCancel.style.color = '#4da6ff'; };
+    btnNewGameCancel.addEventListener('click', hideNewGameModal);
+}
+
 menuBtns.newGame.addEventListener('click', () => {
-    if (savedData && !confirm('Starting a New Game will erase your current save. Proceed?')) return;
-    localStorage.removeItem('crabphonySave');
-    launchEngine(true);
+    if (savedData) {
+        showNewGameModal();
+    } else {
+        localStorage.removeItem('crabphonySave');
+        launchEngine(true);
+    }
 });
 
 menuBtns.continue.addEventListener('click', () => {
@@ -1541,19 +1878,31 @@ menuBtns.continue.addEventListener('click', () => {
 // ============================================================
 //  MAIN GAME LOOP
 // ============================================================
+let loopId = null;
+
+function stopLoop() {
+    if (loopId !== null) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+    }
+}
+
 function loop() {
     frameCount++;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     foods.forEach(f => f.draw(ctx));
     crabs.forEach(c => { c.update(); c.draw(ctx); });
 
+    // Draw and prune particles
+    particles = particles.filter(p => { p.draw(ctx); return p.update(); });
+
     // Flush dead crabs
     const dead = crabs.filter(c => c.dead);
     if (dead.length > 0) {
         const byDisease = dead.filter(c => c.infected).length;
         const byAge     = dead.length - byDisease;
-        if (byDisease > 0) showThreat(`☣️ ${byDisease} crab${byDisease>1?'s':''} died of disease!`);
-        else if (byAge > 0) showThreat(`💀 ${byAge} crab${byAge>1?'s':''} died of old age.`);
+        if (byDisease > 0) { showThreat(`☣️ ${byDisease} crab${byDisease>1?'s':''} died of disease!`); AudioEngine.play('death'); }
+        else if (byAge > 0) { showThreat(`💀 ${byAge} crab${byAge>1?'s':''} died of old age.`); AudioEngine.play('death'); }
         crabs = crabs.filter(c => !c.dead);
     }
 
@@ -1561,5 +1910,5 @@ function loop() {
     if (frameCount % 60 === 0) checkAchievements();
 
     updateUI();
-    requestAnimationFrame(loop);
+    loopId = requestAnimationFrame(loop);
 }

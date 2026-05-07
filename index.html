@@ -437,6 +437,94 @@
         #threatNotif      { top: 150px; border: 2px solid #ff4d4d; color: #ff4d4d; box-shadow: 0 0 20px rgba(255,77,77,0.25); }
 
         /* =============================================
+           PRESTIGE PROGRESS BAR
+        ============================================= */
+        .prestige-bar-wrap {
+            margin-top: 8px;
+        }
+        .prestige-bar-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,204,0,0.12);
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid rgba(255,204,0,0.25);
+        }
+        .prestige-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffcc00, #ff9900);
+            border-radius: 4px;
+            transition: width 0.4s ease;
+            box-shadow: 0 0 6px rgba(255,204,0,0.5);
+        }
+        .prestige-bar-label {
+            font-size: 9px;
+            color: rgba(255,204,0,0.6);
+            letter-spacing: 1px;
+            margin-top: 3px;
+            text-align: right;
+        }
+
+        /* =============================================
+           HARVEST CONTROLS
+        ============================================= */
+        .harvest-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+            align-items: center;
+        }
+        .harvest-row label {
+            font-size: 10px;
+            color: #4da6ff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .harvest-row input[type=checkbox] {
+            accent-color: #4da6ff;
+            width: 12px;
+            height: 12px;
+            cursor: pointer;
+        }
+        .harvest-split {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 6px;
+        }
+        .harvest-split button {
+            flex: 1;
+            padding: 7px 4px !important;
+            font-size: 10px !important;
+            margin-bottom: 0 !important;
+        }
+
+        /* =============================================
+           TOOLTIP
+        ============================================= */
+        #gameTooltip {
+            position: fixed;
+            background: rgba(5, 12, 20, 0.97);
+            border: 1px solid #4da6ff;
+            color: #c8ffe8;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            z-index: 9999;
+            pointer-events: none;
+            display: none;
+            max-width: 220px;
+            line-height: 1.6;
+            letter-spacing: 0.4px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+        }
+
+        /* =============================================
            TOP NEWS TICKER
         ============================================= */
         #newsTicker {
@@ -759,6 +847,19 @@
         <p class="menu-version">v3.0 — Abyss Edition</p>
     </div>
 
+    <!-- New Game Confirmation Modal -->
+    <div id="newGameModal" style="display:none; position:fixed; inset:0; z-index:9000; background:rgba(0,5,12,0.92); backdrop-filter:blur(8px); align-items:center; justify-content:center; flex-direction:column; gap:20px;">
+        <div style="background:rgba(5,15,30,0.98); border:1px solid rgba(255,77,77,0.5); border-radius:14px; padding:36px 44px; text-align:center; max-width:380px; box-shadow:0 0 60px rgba(255,77,77,0.15);">
+            <div style="font-size:36px; margin-bottom:12px;">⚠️</div>
+            <h2 style="color:#ff4d4d; font-family:'Courier New',monospace; font-size:16px; letter-spacing:2px; margin:0 0 10px;">START NEW GAME?</h2>
+            <p style="color:rgba(200,255,232,0.7); font-family:'Courier New',monospace; font-size:11px; line-height:1.7; margin:0 0 24px;">Your current save will be permanently erased.<br>All progress, barnacles, and upgrades lost.</p>
+            <div style="display:flex; gap:12px; justify-content:center;">
+                <button id="btnNewGameConfirm" style="flex:1; padding:12px 0; background:rgba(255,77,77,0.15); border:1px solid #ff4d4d; color:#ff4d4d; font-family:'Courier New',monospace; font-size:11px; letter-spacing:1px; border-radius:6px; cursor:pointer; transition:all 0.15s;">⚠️ YES, ERASE &amp; START</button>
+                <button id="btnNewGameCancel" style="flex:1; padding:12px 0; background:rgba(77,166,255,0.1); border:1px solid #4da6ff; color:#4da6ff; font-family:'Courier New',monospace; font-size:11px; letter-spacing:1px; border-radius:6px; cursor:pointer; transition:all 0.15s;">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ==================== TOP NEWS TICKER ==================== -->
     <div id="newsTicker" style="display:none;">
         <div class="ticker-brand">
@@ -783,15 +884,15 @@
                     <!-- Tank Management -->
                     <div class="shop-section">
                         <h2>🪣 Tank Management</h2>
-                        <button id="btnBuyCapacity">
+                        <button id="btnBuyCapacity" data-tooltip="Adds 5 more crab slots to your tank. More crabs = more passive income.">
                             Expand Tank <span class="lvl-badge" id="lvlCapacity">Lv 0</span>
                             <span class="sub">+5 slots · Cost: <span id="costCapacity">100</span> pts</span>
                         </button>
-                        <button id="btnBuyFiltration">
+                        <button id="btnBuyFiltration" data-tooltip="Improves water quality, extending every crab's lifespan by 2,000 ticks per level. Max 5 levels.">
                             Water Filtration <span class="lvl-badge" id="lvlFiltration">Lv 0</span>
                             <span class="sub">Slows aging · <span id="costFiltration">400</span> pts</span>
                         </button>
-                        <button id="btnBuyHeating">
+                        <button id="btnBuyHeating" data-tooltip="Thermal vents give Orange+ crabs +50% passive income per level. Does not affect Red-Purple. Max 5 levels.">
                             Heating System <span class="lvl-badge" id="lvlHeating">Lv 0</span>
                             <span class="sub">+50% rare income · <span id="costHeating">1000</span> pts</span>
                         </button>
@@ -800,19 +901,19 @@
                     <!-- Breeding Lab -->
                     <div class="shop-section">
                         <h2>🧬 Breeding Lab</h2>
-                        <button id="btnBuyBlueCrab">
+                        <button id="btnBuyBlueCrab" data-tooltip="Imports a Blue crab directly. Useful early on to kickstart higher-tier breeding without waiting for a mutation.">
                             Import Blue Crab
                             <span class="sub">Cost: <span id="costBlueCrab">50</span> pts</span>
                         </button>
-                        <button id="btnBuyAutoFeeder">
+                        <button id="btnBuyAutoFeeder" data-tooltip="Automatically drops food pellets into the tank at regular intervals. Higher levels feed faster. Max 9 levels.">
                             Auto-Feeder <span class="lvl-badge" id="lvlFeeder">Lv 0</span>
                             <span class="sub">Cost: <span id="costFeeder">200</span> pts</span>
                         </button>
-                        <button id="btnBuyKelpFarm">
+                        <button id="btnBuyKelpFarm" data-tooltip="A slow but free secondary food source. Drops food every few seconds passively. Stacks with Auto-Feeder. Max 4 levels.">
                             Kelp Farm <span class="lvl-badge" id="lvlKelpFarm">Lv 0</span>
                             <span class="sub">Passive food · <span id="costKelpFarm">600</span> pts</span>
                         </button>
-                        <button id="btnBuyCrabWhisperer">
+                        <button id="btnBuyCrabWhisperer" data-tooltip="Widens the breeding detection radius by 40% per level. Crabs breed when both are fed and nearby. Max 3 levels.">
                             Crab Whisperer <span class="lvl-badge" id="lvlCrabWhisperer">Lv 0</span>
                             <span class="sub">Wider breed radius · <span id="costCrabWhisperer">3000</span> pts</span>
                         </button>
@@ -821,11 +922,11 @@
                     <!-- Research -->
                     <div class="shop-section">
                         <h2>🔬 Research</h2>
-                        <button id="btnBuyMutation">
+                        <button id="btnBuyMutation" data-tooltip="Each level adds +10% to every crab's mutation chance, making higher tier births more likely when two fed crabs breed.">
                             Genetics Lab <span class="lvl-badge" id="lvlMutation">Lv 0</span>
                             <span class="sub">Cost: <span id="costMutation">500</span> pts</span>
                         </button>
-                        <button id="btnBuyMutationBoost">
+                        <button id="btnBuyMutationBoost" data-tooltip="Supercharges mutation probability by +50% per level on top of the Genetics Lab bonus. For chasing Rainbow crabs. Max 4 levels.">
                             Mutation Accelerator <span class="lvl-badge" id="lvlMutationBoost">Lv 0</span>
                             <span class="sub">+50% mutation odds · <span id="costMutationBoost">8000</span> pts</span>
                         </button>
@@ -834,7 +935,7 @@
                     <!-- Security -->
                     <div class="shop-section">
                         <h2>🛡️ Security</h2>
-                        <button id="btnBuyPredatorGuard">
+                        <button id="btnBuyPredatorGuard" data-tooltip="Deploys a submarine patrol that deflects shark attacks. Lv1=33%, Lv2=60%, Lv3=80%, Lv4=95% deflect chance. Also reduces attack frequency.">
                             Predator Guard <span class="lvl-badge" id="lvlPredatorGuard">Lv 0</span>
                             <span class="sub">Deflects attacks · <span id="costPredatorGuard">750</span> pts</span>
                         </button>
@@ -843,7 +944,7 @@
                     <!-- Economy -->
                     <div class="shop-section">
                         <h2>💰 Economy</h2>
-                        <button id="btnBuyMarketInsider">
+                        <button id="btnBuyMarketInsider" data-tooltip="Grants inside knowledge of the Crab Exchange. Each level adds +25% to all harvest yields. Stacks with market events. Max 5 levels.">
                             Market Insider <span class="lvl-badge" id="lvlMarketInsider">Lv 0</span>
                             <span class="sub">+25% harvest yield · <span id="costMarketInsider">2500</span> pts</span>
                         </button>
@@ -853,10 +954,13 @@
                     <div class="shop-section">
                         <h2>🌾 Harvester</h2>
                         <select id="harvestSelect"></select>
-                        <button id="btnHarvest">
-                            Harvest Selected
-                            <span class="sub">+<span id="harvestYield">0</span> pts · <span id="harvestCooldownLabel" style="color:#ffcc00;"></span></span>
-                        </button>
+                        <div class="harvest-row">
+                            <label><input type="checkbox" id="chkKeepOne"> Keep 1 Safe</label>
+                        </div>
+                        <div class="harvest-split">
+                            <button id="btnHarvestHalf">Harvest Half<span class="sub">half of stock</span></button>
+                            <button id="btnHarvest">Harvest All<span class="sub">+<span id="harvestYield">0</span> pts · <span id="harvestCooldownLabel" style="color:#ffcc00;"></span></span></button>
+                        </div>
                     </div>
 
                     <!-- Evolution / Prestige -->
@@ -903,6 +1007,14 @@
                     <p class="hud-label">Achievement Bonus</p>
                     <p style="color:#00ff88; font-weight:bold; margin:3px 0; font-size:12px;">+<span id="achieveBonusDisplay">0</span>%</p>
                 </div>
+                <!-- Prestige Progress -->
+                <div class="prestige-bar-wrap" id="prestigeBarWrap">
+                    <p class="hud-label" style="margin-top:6px;">⭐ To Carcinize</p>
+                    <div class="prestige-bar-track">
+                        <div class="prestige-bar-fill" id="prestigeBarFill" style="width:0%"></div>
+                    </div>
+                    <div class="prestige-bar-label" id="prestigeBarLabel">0 / 100K</div>
+                </div>
             </div>
 
             <!-- Main game canvas -->
@@ -937,6 +1049,9 @@
             <div id="bnMarketNote" class="bn-market-note"></div>
         </div>
     </div>
+
+    <!-- Global tooltip element -->
+    <div id="gameTooltip"></div>
 
     <script src="game.js"></script>
 </body>

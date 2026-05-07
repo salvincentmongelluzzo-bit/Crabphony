@@ -4,176 +4,345 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Crabphony Mobile</title>
-    
     <style>
-        /* Reset & Mobile Base */
-        html, body {
-            margin: 0; padding: 0; width: 100vw; height: 100vh;
-            background-color: #050505; color: white;
-            font-family: 'Courier New', Courier, monospace;
-            overflow: hidden; touch-action: none; 
-        }
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+        html,body{margin:0;padding:0;width:100vw;height:100dvh;background:#050b14;color:#fff;font-family:'Courier New',monospace;overflow:hidden;touch-action:none;}
 
-        /* --- BOOT SCREENS --- */
-        #loadingScreen, #mainMenu {
-            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #000000; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 100;
-        }
-        #mainMenu {
-            background-image: url('background.gif'); background-size: cover; background-position: center bottom;
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.9); z-index: 50;
-        }
-        #menuLogo { width: 90%; max-width: 300px; margin-bottom: 30px; filter: drop-shadow(2px 2px 0px #0a141e) drop-shadow(0 0 15px rgba(77,166,255,0.5)); }
-        .menu-buttons { display: flex; flex-direction: column; gap: 12px; width: 80%; max-width: 280px; }
-        
-        /* Hide the Mobile button since we are already on mobile */
-        #btnMobile { display: none !important; } 
+        /* ── LOADING ── */
+        #loadingScreen{position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;}
+        #loadingCrab{width:72px;margin-bottom:20px;animation:hueRot 2s linear infinite;}
+        @keyframes hueRot{to{filter:hue-rotate(360deg) saturate(3);}}
+        .lbar{width:200px;height:8px;border:2px solid #fff;border-radius:4px;overflow:hidden;}
+        .lfill{height:100%;width:0;background:#fff;animation:fillBar 1.5s ease forwards;}
+        @keyframes fillBar{to{width:100%;}}
 
-        /* --- MOBILE GAME LAYER (Vertical Stack) --- */
-        #gameLayer {
-            width: 100vw; height: 100vh;
-            display: flex; flex-direction: column; 
-        }
+        /* ── MENU ── */
+        #mainMenu{position:fixed;inset:0;background:url('background.gif') center/cover no-repeat;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:100;}
+        #mainMenu::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.7);}
+        #menuLogo{width:80%;max-width:280px;margin-bottom:28px;position:relative;filter:drop-shadow(0 0 20px rgba(77,166,255,0.6));}
+        .menu-buttons{display:flex;flex-direction:column;gap:12px;width:82%;max-width:300px;position:relative;}
+        .menu-buttons button{background:rgba(10,20,30,0.9);border:1px solid #4da6ff;color:#4da6ff;padding:16px;border-radius:8px;font-family:inherit;font-size:14px;font-weight:bold;letter-spacing:1px;cursor:pointer;transition:all .15s;}
+        .menu-buttons button:active{background:#4da6ff;color:#000;}
+        #btnMobile{display:none!important;}
+        .menu-version{position:relative;color:#4da6ff55;font-size:10px;margin-top:16px;}
 
-        /* 1. HUD (Top Bar) */
-        #ui {
-            width: 100%; background: rgba(10, 20, 30, 0.95);
-            padding: 10px; box-sizing: border-box; border-bottom: 2px solid #4da6ff;
-            display: flex; flex-wrap: wrap; justify-content: space-between;
-            font-size: 13px; z-index: 10; font-weight: bold;
-        }
-        #ui p { margin: 4px 0; width: 48%; }
-        #ui p:nth-child(1), #ui p:nth-child(2) { color: white; }
+        /* ── NEW GAME MODAL ── */
+        #newGameModal{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;}
+        .ngm-box{background:#050f1e;border:1px solid #ff4d4d88;border-radius:14px;padding:32px 28px;text-align:center;width:86%;max-width:340px;}
+        .ngm-box h2{color:#ff4d4d;font-size:15px;letter-spacing:2px;margin:0 0 10px;}
+        .ngm-box p{color:rgba(200,255,232,.7);font-size:11px;line-height:1.7;margin:0 0 22px;}
+        .ngm-btns{display:flex;gap:10px;}
+        .ngm-btns button{flex:1;padding:14px 0;border-radius:6px;font-family:inherit;font-size:11px;font-weight:bold;letter-spacing:1px;cursor:pointer;transition:all .15s;}
+        #btnNewGameConfirm{background:rgba(255,77,77,.12);border:1px solid #ff4d4d;color:#ff4d4d;}
+        #btnNewGameConfirm:active{background:#ff4d4d;color:#000;}
+        #btnNewGameCancel{background:rgba(77,166,255,.1);border:1px solid #4da6ff;color:#4da6ff;}
+        #btnNewGameCancel:active{background:#4da6ff;color:#000;}
 
-        /* 2. THE TANK (Middle Flex Area) */
-        #gameCanvas {
-            width: 100vw; flex-grow: 1; 
-            background-image: url('background.gif'); background-size: cover; background-position: center bottom;
-            display: block;
-        }
+        /* ── GAME LAYER ── */
+        #gameLayer{position:fixed;inset:0;display:none;flex-direction:column;}
 
-        /* 3. MUTATION KEY (Horizontal Scroll immediately below tank) */
-        #crabKey {
-            display: flex; flex-wrap: nowrap; overflow-x: auto;
-            background: #000; padding: 8px 10px; gap: 15px;
-            border-top: 2px solid #4da6ff; border-bottom: 2px solid #4da6ff;
-        }
-        .key-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; min-width: 45px; }
-        #crabKey::-webkit-scrollbar { height: 4px; }
-        #crabKey::-webkit-scrollbar-thumb { background: #4da6ff; border-radius: 4px; }
+        /* HUD */
+        #mHud{background:rgba(5,15,28,0.97);border-bottom:2px solid #4da6ff33;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;font-size:12px;gap:4px;}
+        .hud-cell{display:flex;flex-direction:column;align-items:center;line-height:1.3;}
+        .hud-label{font-size:8px;color:#4da6ff77;letter-spacing:1px;}
+        .hud-val{font-size:13px;font-weight:bold;color:#fff;}
 
-        /* 4. SHOP & CONTROLS (Bottom Scrollable Sheet) */
-        #shop {
-            width: 100vw; height: 35vh; min-height: 250px;
-            background: rgba(10, 20, 30, 0.98); 
-            padding: 15px; box-sizing: border-box; overflow-y: auto; z-index: 10;
-        }
-        #sidebarLogo { display: none; } /* Hidden to save vertical space */
-        
-        #shop h2 { color: #4da6ff; font-size: 14px; margin: 15px 0 10px 0; border-bottom: 1px solid rgba(77,166,255,0.3); padding-bottom: 5px; text-transform: uppercase; }
-        #shop h2:first-of-type { margin-top: 0; }
+        /* Canvas */
+        #canvasWrapper{position:relative;flex:1;overflow:hidden;background:url('background.gif') center/cover;}
+        #gameCanvas{display:block;width:100%;height:100%;}
 
-        /* Mobile Buttons */
-        button {
-            width: 100%; background: #0a141e; border: 1px solid #4da6ff; color: #4da6ff;
-            padding: 14px; font-weight: bold; margin-bottom: 10px;
-            border-radius: 6px; font-family: inherit; font-size: 13px;
-        }
-        button:active:not(:disabled) { background: #4da6ff; color: #050505; }
-        button:disabled { border-color: #333; color: #555; background: #0a0a0a; }
-        
-        #btnPrestige { border-color: #ffcc00; color: #ffcc00; margin-top: 5px;}
-        #btnPrestige:active:not(:disabled) { background: #ffcc00; color: #000; }
-        
-        #btnHardReset { border-color: #ff4d4d; color: #ff4d4d; }
-        
-        #harvestSelect { width: 100%; padding: 12px; background: #000; color: #4da6ff; border: 1px solid #4da6ff; margin-bottom: 10px; font-weight: bold; border-radius: 6px; font-family: inherit; font-size: 14px;}
+        /* Prestige bar overlay */
+        #prestigeOverlay{position:absolute;bottom:0;left:0;right:0;padding:4px 10px;background:rgba(0,0,0,0.6);}
+        #prestigeBarTrack{height:4px;background:rgba(255,204,0,.15);border-radius:4px;overflow:hidden;}
+        #prestigeBarFill{height:100%;width:0;background:linear-gradient(90deg,#ffcc00,#ff9900);border-radius:4px;transition:width .3s;}
+        #prestigeBarLabel{font-size:8px;color:#ffcc0099;letter-spacing:1px;}
 
-        /* Loading animations */
-        #loadingCrab { width: 70px; image-rendering: pixelated; margin-bottom: 20px; animation: loadingRainbow 2s linear infinite; }
-        @keyframes loadingRainbow { 0% { filter: hue-rotate(0deg) saturate(3); } 100% { filter: hue-rotate(360deg) saturate(3); } }
-        .loader-bar { width: 200px; height: 8px; border: 2px solid #ffffff; border-radius: 4px; overflow: hidden; }
-        .loader-fill { height: 100%; width: 0%; background-color: #ffffff; animation: fillBar 1.5s ease-in-out forwards; }
-        @keyframes fillBar { to { width: 100%; } }
-        
-        .mobile-footer { text-align: center; margin-top: 25px; padding-bottom: 20px; }
-        .mobile-footer a { color: #888; text-decoration: underline; font-size: 12px; }
+        /* Breaking news toast */
+        #breakingNews{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(0,0,0,.9);border:1px solid #4da6ff;border-radius:8px;padding:8px 14px;text-align:center;display:none;max-width:90%;pointer-events:none;}
+        #breakingNews.show{display:block;animation:bnFadeIn .3s ease forwards;}
+        @keyframes bnFadeIn{from{opacity:0;transform:translateX(-50%) translateY(-6px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+        #bnHeadline{font-size:11px;color:#fff;}
+        #bnMarketNote{font-size:10px;color:#ffcc00;margin-top:2px;}
+
+        /* Threat toast */
+        #threatToast{position:absolute;top:50px;left:50%;transform:translateX(-50%);z-index:20;background:rgba(0,0,0,.88);border:1px solid #ff4d4d;border-radius:8px;padding:8px 14px;font-size:11px;text-align:center;display:none;max-width:90%;pointer-events:none;}
+
+        /* Bottom Tab Bar */
+        #tabBar{display:flex;background:rgba(5,12,22,0.98);border-top:2px solid #4da6ff22;flex-shrink:0;}
+        .tab-btn{flex:1;padding:10px 4px 8px;background:none;border:none;color:#4da6ff66;font-family:inherit;font-size:9px;font-weight:bold;letter-spacing:.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:color .15s;}
+        .tab-btn .ticon{font-size:18px;line-height:1;}
+        .tab-btn.active{color:#4da6ff;border-top:2px solid #4da6ff;margin-top:-2px;}
+
+        /* Tab Panels */
+        #tabPanels{height:44vh;max-height:380px;background:rgba(5,12,22,0.98);overflow:hidden;flex-shrink:0;}
+        .tab-panel{height:100%;overflow-y:auto;padding:12px 14px;display:none;}
+        .tab-panel.active{display:block;}
+        .tab-panel::-webkit-scrollbar{width:3px;}
+        .tab-panel::-webkit-scrollbar-thumb{background:#4da6ff44;border-radius:4px;}
+
+        /* Shop sections */
+        .shop-section{margin-bottom:6px;}
+        .shop-header{color:#4da6ff;font-size:10px;font-weight:bold;letter-spacing:1.5px;padding:8px 0 4px;border-bottom:1px solid #4da6ff22;margin-bottom:6px;text-transform:uppercase;}
+        .shop-btn{width:100%;background:rgba(10,25,40,0.8);border:1px solid #4da6ff33;color:#c8ffe8;padding:12px 14px;border-radius:6px;font-family:inherit;font-size:11px;text-align:left;cursor:pointer;margin-bottom:6px;transition:all .15s;display:block;}
+        .shop-btn:active:not(:disabled){background:#4da6ff;color:#000;}
+        .shop-btn:disabled{color:#333;border-color:#1a2a3a;background:rgba(5,12,22,0.5);}
+        .shop-btn.yellow{border-color:#ffcc0055;color:#ffcc00;}
+        .shop-btn.yellow:active:not(:disabled){background:#ffcc00;color:#000;}
+        .shop-btn.red{border-color:#ff4d4d55;color:#ff4d4d;}
+        .shop-btn.red:active:not(:disabled){background:#ff4d4d;color:#000;}
+
+        /* Harvest tab */
+        .harvest-select{width:100%;padding:12px;background:rgba(5,12,22,0.9);color:#4da6ff;border:1px solid #4da6ff;border-radius:6px;font-family:inherit;font-size:13px;font-weight:bold;margin-bottom:10px;}
+        .keep1-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:11px;color:#c8ffe8;}
+        .keep1-row input{width:16px;height:16px;accent-color:#4da6ff;}
+        .harvest-row{display:flex;gap:8px;}
+        .harvest-row .shop-btn{flex:1;text-align:center;}
+
+        /* Market tab */
+        #marketGrid{display:flex;flex-direction:column;gap:0;}
+        .mkt-row{display:flex;align-items:center;gap:6px;padding:7px 4px;border-bottom:1px solid rgba(77,166,255,0.08);font-size:11px;}
+        .mkt-name{flex:1;font-weight:bold;}
+        .mkt-price{color:#fff;min-width:60px;text-align:right;}
+        .mkt-change{min-width:48px;text-align:right;font-size:10px;}
+        .mkt-event-badge{background:rgba(255,204,0,.15);border:1px solid #ffcc00;color:#ffcc00;font-size:8px;padding:1px 4px;border-radius:3px;}
+        .market-sub{color:#4da6ff;font-size:10px;font-weight:bold;letter-spacing:1.5px;padding:10px 0 6px;border-bottom:1px solid #4da6ff22;margin-bottom:8px;}
+        #eventLog{display:flex;flex-direction:column;gap:4px;}
+        .evt-entry{border-left:2px solid #4da6ff;padding:4px 8px;background:rgba(0,0,0,.3);border-radius:0 4px 4px 0;}
+        .evt-title{font-size:10px;font-weight:bold;}
+        .evt-desc{font-size:9px;color:#aaa;margin-top:2px;}
+
+        /* Species tab */
+        #crabKey{display:flex;flex-direction:column;gap:4px;}
+        .key-item{display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid rgba(77,166,255,0.08);}
+        .key-crab-canvas{flex-shrink:0;}
+        .key-name{flex:1;font-size:11px;font-weight:bold;}
+        .key-count{font-size:12px;font-weight:bold;min-width:24px;text-align:center;}
+        .rarity-val{font-size:9px;color:#4da6ff88;min-width:42px;text-align:right;}
+
+        /* Hidden required elements */
+        #newsTicker,#gameTooltip,#marketSidebar{display:none!important;}
+
+        /* Scrollbar hide for panels */
+        #crabKeyHeader{font-size:10px;font-weight:bold;letter-spacing:2px;color:#4da6ff;margin-bottom:8px;}
     </style>
 </head>
 <body>
 
-    <div id="loadingScreen">
-        <img src="crab.png" id="loadingCrab" alt="Loading Crab">
-        <div class="loader-bar">
-            <div class="loader-fill"></div>
+<!-- Loading -->
+<div id="loadingScreen">
+    <img src="crab.png" id="loadingCrab" alt="Loading">
+    <div class="lbar"><div class="lfill"></div></div>
+</div>
+
+<!-- Main Menu -->
+<div id="mainMenu">
+    <img src="crabphony.png" id="menuLogo" alt="Crabphony">
+    <div class="menu-buttons">
+        <button id="btnNewGame">⚗️ NEW GAME</button>
+        <button id="btnContinueGame">▶ CONTINUE</button>
+        <button id="btnMobile">📱 MOBILE</button>
+        <button id="btnHowToPlay">📖 HOW TO PLAY</button>
+        <button id="btnAboutUs">🦀 ABOUT</button>
+    </div>
+    <p class="menu-version">v3.0 — Abyss Mobile</p>
+</div>
+
+<!-- New Game Modal -->
+<div id="newGameModal">
+    <div class="ngm-box">
+        <div style="font-size:32px;margin-bottom:10px;">⚠️</div>
+        <h2>START NEW GAME?</h2>
+        <p>Your save will be permanently erased.<br>All progress and upgrades lost.</p>
+        <div class="ngm-btns">
+            <button id="btnNewGameConfirm">⚠️ ERASE &amp; START</button>
+            <button id="btnNewGameCancel">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<!-- Game Layer -->
+<div id="gameLayer">
+
+    <!-- HUD -->
+    <div id="mHud">
+        <div class="hud-cell">
+            <span class="hud-label">POINTS</span>
+            <span class="hud-val" id="scoreDisplay">0</span>
+        </div>
+        <div class="hud-cell">
+            <span class="hud-label">POP</span>
+            <span class="hud-val"><span id="popDisplay">0</span>/<span id="maxPopDisplay">10</span></span>
+        </div>
+        <div class="hud-cell">
+            <span class="hud-label">MULT</span>
+            <span class="hud-val">×<span id="multiplierDisplay">1.0</span></span>
+        </div>
+        <div class="hud-cell">
+            <span class="hud-label">🐚 BARN</span>
+            <span class="hud-val" id="barnacleDisplay">0</span>
         </div>
     </div>
 
-    <div id="mainMenu" style="display: none;">
-        <img src="crabphony.png" id="menuLogo" alt="Crabphony">
-        <div class="menu-buttons">
-            <button id="btnNewGame">NEW GAME</button>
-            <button id="btnContinueGame">CONTINUE</button>
-            <button id="btnMobile">CRABPHONY MOBILE</button>
-            <button id="btnHowToPlay">HOW TO PLAY</button>
-            <button id="btnAboutUs">ABOUT US</button>
-        </div>
-    </div>
-
-    <div id="gameLayer" style="display: none;">
-        
-        <div id="ui">
-            <p>Points: <span id="scoreDisplay">0.0</span></p>
-            <p style="text-align: right;">Pop: <span id="popDisplay">2</span> / <span id="maxPopDisplay">10</span></p>
-            <p style="color: #ffcc00;">Multiplier: x<span id="multiplierDisplay">1.0</span></p>
-            <p style="color: #ffcc00; text-align: right;">Barnacles: <span id="barnacleDisplay">0</span></p>
-        </div>
-
+    <!-- Tank -->
+    <div id="canvasWrapper">
         <canvas id="gameCanvas"></canvas>
-        
-        <div id="crabKey"></div>
 
-        <div id="shop">
-            <img src="crabphony.png" id="sidebarLogo" alt="Crabphony">
-            
-            <h2>Upgrades & Management</h2>
-            <button id="btnBuyCapacity">Expand Tank (+5) - Cost: <span id="costCapacity">100</span></button>
-            <button id="btnBuyBlueCrab">Import Blue Crab - Cost: <span id="costBlueCrab">50</span></button>
-            <button id="btnBuyAutoFeeder">Auto-Feeder (Lvl <span id="lvlFeeder">0</span>) - Cost: <span id="costFeeder">200</span></button>
-            <button id="btnBuyMutation">Genetics (Lvl <span id="lvlMutation">0</span>) - Cost: <span id="costMutation">500</span></button>
-            
-            <h2>Harvester</h2>
-            <select id="harvestSelect"></select>
-            <button id="btnHarvest">Harvest Selected (+<span id="harvestYield">0</span> pts)</button>
-            
-            <h2 style="color: #ffcc00;">Evolution</h2>
-            <button id="btnPrestige">CARCINIZE (100,000 Pts)</button>
-
-            <div style="margin-top: 30px; border-top: 1px solid #ff4d4d; padding-top: 15px;">
-                <p style="color: #ff4d4d; font-size: 11px; margin-bottom: 8px; text-align: center;">WARNING: THIS WIPES EVERYTHING</p>
-                <button id="btnHardReset">ERASE ALL DATA</button>
+        <!-- Prestige bar -->
+        <div id="prestigeOverlay">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+                <span style="font-size:8px;color:#ffcc0099;letter-spacing:1px;">⭐ TO CARCINIZE</span>
+                <span id="prestigeBarLabel" style="font-size:8px;color:#ffcc0099;letter-spacing:1px;"></span>
             </div>
-            
-            <div class="mobile-footer">
-                <a href="index.html">Return to Desktop Version</a>
+            <div id="prestigeBarTrack"><div id="prestigeBarFill"></div></div>
+        </div>
+
+        <!-- Toasts (inside canvas wrapper so they float over the tank) -->
+        <div id="breakingNews"><div id="bnHeadline"></div><div id="bnMarketNote"></div></div>
+        <div id="threatToast"></div>
+    </div>
+
+    <!-- Bottom Tab Bar -->
+    <div id="tabBar">
+        <button class="tab-btn active" onclick="showTab('shop')" id="tabBtnShop">
+            <span class="ticon">🏪</span>SHOP
+        </button>
+        <button class="tab-btn" onclick="showTab('harvest')" id="tabBtnHarvest">
+            <span class="ticon">🌾</span>HARVEST
+        </button>
+        <button class="tab-btn" onclick="showTab('market')" id="tabBtnMarket">
+            <span class="ticon">📊</span>MARKET
+        </button>
+        <button class="tab-btn" onclick="showTab('species')" id="tabBtnSpecies">
+            <span class="ticon">🦀</span>SPECIES
+        </button>
+    </div>
+
+    <!-- Tab Panels -->
+    <div id="tabPanels">
+
+        <!-- SHOP -->
+        <div class="tab-panel active" id="panelShop">
+            <div class="shop-section">
+                <div class="shop-header">🐠 Tank Management</div>
+                <button class="shop-btn" id="btnBuyCapacity">Expand Tank (+5 slots) — <span id="costCapacity">100</span> pts</button>
+                <button class="shop-btn" id="btnBuyBlueCrab">Import Blue Crab — <span id="costBlueCrab">50</span> pts</button>
+                <button class="shop-btn" id="btnBuyAutoFeeder">Auto-Feeder (Lv <span id="lvlFeeder">0</span>) — <span id="costFeeder">200</span> pts</button>
+            </div>
+            <div class="shop-section">
+                <div class="shop-header">🔬 Research</div>
+                <button class="shop-btn" id="btnBuyMutation">Genetics Lab (Lv <span id="lvlMutation">0</span>) — <span id="costMutation">500</span> pts</button>
+                <button class="shop-btn" id="btnBuyMutationBoost">Mutation Booster</button>
+            </div>
+            <div class="shop-section">
+                <div class="shop-header">🌊 Environment</div>
+                <button class="shop-btn" id="btnBuyFiltration">Water Filtration</button>
+                <button class="shop-btn" id="btnBuyHeating">Heating System</button>
+                <button class="shop-btn" id="btnBuyKelpFarm">Kelp Farm</button>
+            </div>
+            <div class="shop-section">
+                <div class="shop-header">🛡️ Security &amp; Economy</div>
+                <button class="shop-btn" id="btnBuyCrabWhisperer">Crab Whisperer</button>
+                <button class="shop-btn" id="btnBuyPredatorGuard">Predator Guard</button>
+                <button class="shop-btn" id="btnBuyMarketInsider">Market Insider</button>
+            </div>
+            <div class="shop-section">
+                <div class="shop-header">⭐ Evolution</div>
+                <button class="shop-btn yellow" id="btnPrestige">CARCINIZE — 100,000 pts</button>
+                <button class="shop-btn yellow" id="btnPrestige2" style="display:none;">DEEP CARCINIZE — 10M pts</button>
+            </div>
+            <div class="shop-section" style="margin-top:10px;border-top:1px solid #ff4d4d33;padding-top:10px;">
+                <button class="shop-btn red" id="btnHardReset">⚠️ ERASE ALL DATA</button>
+            </div>
+            <div style="text-align:center;margin-top:8px;padding-bottom:4px;">
+                <a href="index.html" style="color:#4da6ff44;font-size:10px;text-decoration:underline;">Switch to Desktop</a>
             </div>
         </div>
-        
-    </div>
-    
-    <script src="game.js"></script>
-    
-    <script>
-        document.getElementById('gameCanvas').addEventListener('touchstart', function(e) {
-            e.preventDefault(); // Stops the screen from scrolling when you tap
-            const touch = e.touches[0];
-            const mouseEvent = new MouseEvent("mousedown", {
-                clientX: touch.clientX,
-                clientY: touch.clientY
-            });
-            this.dispatchEvent(mouseEvent);
-        }, {passive: false});
-    </script>
+
+        <!-- HARVEST -->
+        <div class="tab-panel" id="panelHarvest">
+            <div class="shop-header">🌾 Harvester</div>
+            <select class="harvest-select" id="harvestSelect"></select>
+            <div class="keep1-row">
+                <input type="checkbox" id="chkKeepOne">
+                <label for="chkKeepOne">Keep 1 Safe (protect last specimen)</label>
+            </div>
+            <div class="harvest-row">
+                <button class="shop-btn" id="btnHarvestHalf" style="text-align:center;">
+                    Harvest Half<br><small style="color:#4da6ff88;">half of stock</small>
+                </button>
+                <button class="shop-btn" id="btnHarvest" style="text-align:center;">
+                    Harvest All<br><small id="harvestYield" style="color:#4da6ff88;">0 pts</small>
+                </button>
+            </div>
+            <div style="margin-top:14px;padding:10px;background:rgba(0,255,204,0.03);border:1px solid rgba(0,255,204,0.1);border-radius:6px;font-size:10px;color:#4da6ff88;line-height:1.7;">
+                💡 Tap the tank to drop food. Fed crabs breed to produce higher-tier mutations. Your highest-tier crabs are always protected.
+            </div>
+        </div>
+
+        <!-- MARKET -->
+        <div class="tab-panel" id="panelMarket">
+            <div class="shop-header">📈 Crab Exchange — <span style="color:#00ffcc55;font-size:8px;font-weight:normal;">LIVE</span></div>
+            <div id="marketGrid"></div>
+            <div class="market-sub" style="margin-top:14px;">📰 Recent Events</div>
+            <div id="eventLog"></div>
+        </div>
+
+        <!-- SPECIES -->
+        <div class="tab-panel" id="panelSpecies">
+            <div id="crabKey"></div>
+        </div>
+
+    </div><!-- /tabPanels -->
+
+</div><!-- /gameLayer -->
+
+<!-- Required hidden elements that game.js injects into -->
+<div id="newsTicker" style="display:none!important;"><div id="topTickerInner"></div></div>
+<div id="gameTooltip" style="display:none!important;"></div>
+<div id="marketSidebar" style="display:none!important;"></div>
+<img src="crabphony.png" id="sidebarLogo" style="display:none!important;" alt="">
+
+<script src="game.js"></script>
+
+<script>
+/* ── TAB NAVIGATION ── */
+function showTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+    document.getElementById('tabBtn' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+}
+
+/* ── TOUCH → MOUSEDOWN on canvas ── */
+document.getElementById('gameCanvas').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    const t = e.touches[0];
+    this.dispatchEvent(new MouseEvent('mousedown', { clientX: t.clientX, clientY: t.clientY, bubbles: true }));
+}, { passive: false });
+
+/* ── FLASH breaking news as toast ── */
+const _origBN = window.showBreakingNews;
+// Intercept breaking news to show inside canvas area on mobile
+const bnEl = document.getElementById('breakingNews');
+if (bnEl) {
+    const obs = new MutationObserver(() => {
+        if (bnEl.style.display !== 'none') {
+            setTimeout(() => { bnEl.style.display = 'none'; }, 4000);
+        }
+    });
+    obs.observe(bnEl, { attributes: true, attributeFilter: ['style'] });
+}
+
+/* ── THREAT toast positioning ── */
+const threatEl = document.getElementById('threatToast');
+// game.js uses #threat element — remap it
+Object.defineProperty(document, 'getElementById', {
+    value: function(id) {
+        if (id === 'threatNotif') return threatEl;
+        return Document.prototype.getElementById.call(this, id);
+    },
+    writable: true
+});
+</script>
 </body>
 </html>
